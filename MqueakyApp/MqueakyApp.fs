@@ -58,7 +58,8 @@ module App =
 
         let page = 
             View.ContentPage(
-              content = View.StackLayout(padding = Thickness 20.0, verticalOptions = LayoutOptions.Center,
+              content = View.StackLayout(padding = Thickness 20.0, 
+                verticalOptions = LayoutOptions.FillAndExpand,
                 ref = model.StackLayout,
                 children = [ 
                     View.SKCanvasView(
