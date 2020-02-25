@@ -14,6 +14,7 @@ module App =
       { Count : int
         Step : int
         AnimationShouldRun : bool
+        TouchPoint: SKPoint
         StackLayout : ViewRef<StackLayout>
         TimerOn: bool }
 
@@ -27,7 +28,7 @@ module App =
         | SKSurfaceTouched of SKPoint
         | AnimationShouldRun of bool
 
-    let initModel = { Count = 0; Step = 1; TimerOn=false; AnimationShouldRun = true; StackLayout = ViewRef<StackLayout>() }
+    let initModel = { Count = 0; Step = 1; TimerOn=false; AnimationShouldRun = true; StackLayout = ViewRef<StackLayout>(); TouchPoint = SKPoint.Empty }
 
     let init () = initModel, Cmd.none
 
@@ -44,8 +45,7 @@ module App =
         | Reset -> init ()
         | SetStep n -> { model with Step = n }, Cmd.none
         | TimerToggled on -> { model with TimerOn = on }, (if on then timerCmd else Cmd.none)
-        | SKSurfaceTouched _ ->
-            model, Cmd.none
+        | SKSurfaceTouched point -> { model with TouchPoint = point }, Cmd.none
         | TimedTick -> 
             if model.TimerOn then 
                 { model with Count = model.Count + model.Step }, timerCmd
@@ -54,7 +54,6 @@ module App =
 
     let view (model: Model) dispatch =
         let animate = new Animation((fun f -> dispatch Increment), start = 0.0, ``end``= 1.0, easing = Easing.BounceIn)
-        let sk = ViewRef<SKCanvas>()
 
         let page = 
             View.ContentPage(
@@ -63,7 +62,6 @@ module App =
                 ref = model.StackLayout,
                 children = [ 
                     View.SKCanvasView(
-                        //ref = sk,
                         invalidate = true,
                         enableTouchEvents = true, 
                         paintSurface = (fun args -> 
@@ -72,7 +70,7 @@ module App =
                             let canvas = surface.Canvas
 
                             canvas.Clear() 
-                            use paint = new SKPaint(Style = SKPaintStyle.Stroke, Color = Color.Blue.ToSKColor(), StrokeWidth = 25.0f)
+                            use paint = new SKPaint(Color = Color.Blue.ToSKColor(), StrokeWidth = 25.0f, IsStroke = true)
                             canvas.DrawCircle(float32 (info.Width / 2), float32 (info.Height / 2), float32 (model.Count), paint)
                         ),
                         horizontalOptions = LayoutOptions.FillAndExpand, 
@@ -82,6 +80,7 @@ module App =
                                 dispatch (SKSurfaceTouched args.Location)
                         ))
                     View.Label(text = sprintf "%d" model.Count, horizontalOptions = LayoutOptions.Center, width=200.0, horizontalTextAlignment=TextAlignment.Center)
+                    View.Label(text = sprintf "X: %f, Y: %f" model.TouchPoint.X model.TouchPoint.Y, horizontalOptions = LayoutOptions.Center, width=200.0, horizontalTextAlignment=TextAlignment.Center)
                     View.Button(text = "Increment", command = (fun () -> dispatch Increment), horizontalOptions = LayoutOptions.Center)
                     View.Button(text = "Decrement", command = (fun () -> dispatch Decrement), horizontalOptions = LayoutOptions.Center)
                     View.Label(text = "Timer", horizontalOptions = LayoutOptions.Center)
