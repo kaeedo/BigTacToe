@@ -1,5 +1,4 @@
-﻿// Copyright 2018-2019 Fabulous contributors. See LICENSE.md for license.
-namespace MasterTacToe
+﻿namespace MasterTacToe
 
 open System.Diagnostics
 open Fabulous
@@ -11,50 +10,21 @@ open SkiaSharp.Views.Forms
 
 module App = 
     type Model = 
-      { Count : int
-        Step : int
-        AnimationShouldRun : bool
-        TouchPoint: SKPoint
-        StackLayout : ViewRef<StackLayout>
-        TimerOn: bool }
+      { TouchPoint: SKPoint
+        StackLayout : ViewRef<StackLayout> }
 
     type Msg = 
-        | Increment 
-        | Decrement 
-        | Reset
-        | SetStep of int
-        | TimerToggled of bool
-        | TimedTick
         | SKSurfaceTouched of SKPoint
-        | AnimationShouldRun of bool
 
-    let initModel = { Count = 0; Step = 1; TimerOn=false; AnimationShouldRun = true; StackLayout = ViewRef<StackLayout>(); TouchPoint = SKPoint.Empty }
+    let initModel = { StackLayout = ViewRef<StackLayout>(); TouchPoint = SKPoint.Empty }
 
     let init () = initModel, Cmd.none
 
-    let timerCmd =
-        async { do! Async.Sleep 200
-                return TimedTick }
-        |> Cmd.ofAsyncMsg
-
     let update msg model =
         match msg with
-        | Increment -> { model with Count = model.Count + model.Step }, Cmd.none
-        | Decrement -> { model with Count = model.Count - model.Step }, Cmd.none
-        | AnimationShouldRun shouldRun -> { model with AnimationShouldRun = shouldRun }, Cmd.none
-        | Reset -> init ()
-        | SetStep n -> { model with Step = n }, Cmd.none
-        | TimerToggled on -> { model with TimerOn = on }, (if on then timerCmd else Cmd.none)
         | SKSurfaceTouched point -> { model with TouchPoint = point }, Cmd.none
-        | TimedTick -> 
-            if model.TimerOn then 
-                { model with Count = model.Count + model.Step }, timerCmd
-            else 
-                model, Cmd.none
 
     let view (model: Model) dispatch =
-        let animate = new Animation((fun f -> dispatch Increment), start = 0.0, ``end``= 1.0, easing = Easing.BounceIn)
-
         let page = 
             View.ContentPage(
               content = View.StackLayout(padding = Thickness 20.0, 
@@ -70,8 +40,14 @@ module App =
                             let canvas = surface.Canvas
 
                             canvas.Clear() 
-                            use paint = new SKPaint(Color = Color.Blue.ToSKColor(), StrokeWidth = 25.0f, IsStroke = true)
-                            canvas.DrawCircle(float32 (info.Width / 2), float32 (info.Height / 2), float32 (model.Count), paint)
+                            use mainLinePaint = new SKPaint(Color = Color.Blue.ToSKColor(), StrokeWidth = 10.0f, IsStroke = true)
+                            use smallLinePaint = new SKPaint(Color = Color.Black.ToSKColor(), StrokeWidth = 5.0f, IsStroke = true)
+
+                            canvas.DrawLine(SKPoint(float32 (info.Width / 3), 0.0f), SKPoint(float32 (info.Width / 3), float32 info.Height), mainLinePaint)
+                            canvas.DrawLine(SKPoint(float32 ((info.Width / 3) * 2), 0.0f), SKPoint(float32 ((info.Width / 3) * 2), float32 info.Height), mainLinePaint)
+
+                            canvas.DrawLine(SKPoint(0.0f, float32 (info.Height / 3)), SKPoint(float32 info.Width, float32 (info.Height / 3)), mainLinePaint)
+                            canvas.DrawLine(SKPoint(0.0f, float32 ((info.Height / 3) * 2)), SKPoint(float32 info.Width, float32 ((info.Height / 3) * 2)), mainLinePaint)
                         ),
                         horizontalOptions = LayoutOptions.FillAndExpand, 
                         verticalOptions = LayoutOptions.FillAndExpand, 
@@ -79,26 +55,7 @@ module App =
                             if args.InContact then
                                 dispatch (SKSurfaceTouched args.Location)
                         ))
-                    View.Label(text = sprintf "%d" model.Count, horizontalOptions = LayoutOptions.Center, width=200.0, horizontalTextAlignment=TextAlignment.Center)
-                    View.Label(text = sprintf "X: %f, Y: %f" model.TouchPoint.X model.TouchPoint.Y, horizontalOptions = LayoutOptions.Center, width=200.0, horizontalTextAlignment=TextAlignment.Center)
-                    View.Button(text = "Increment", command = (fun () -> dispatch Increment), horizontalOptions = LayoutOptions.Center)
-                    View.Button(text = "Decrement", command = (fun () -> dispatch Decrement), horizontalOptions = LayoutOptions.Center)
-                    View.Label(text = "Timer", horizontalOptions = LayoutOptions.Center)
-                    View.Switch(isToggled = model.TimerOn, toggled = (fun on -> dispatch (TimerToggled on.Value)), horizontalOptions = LayoutOptions.Center)
-                    View.Slider(minimumMaximum = (0.0, 10.0), value = double model.Step, valueChanged = (fun args -> dispatch (SetStep (int (args.NewValue + 0.5)))), horizontalOptions = LayoutOptions.FillAndExpand)
-                    View.Label(text = sprintf "Step size: %d" model.Step, horizontalOptions = LayoutOptions.Center) 
-                    View.Button(text = "Reset", horizontalOptions = LayoutOptions.Center, command = (fun () -> dispatch Reset), commandCanExecute = (model <> initModel))
-                ]))
-
-        match model.StackLayout.TryValue with
-        | None -> ()
-        | Some c ->
-            if (not (c.AnimationIsRunning("HomePage"))) && model.AnimationShouldRun
-            then animate.Commit(c, "HomePage", rate = 1000u, length = 5000u, finished = (System.Action<float, bool>(fun a b -> 
-                                                                                            dispatch <| AnimationShouldRun false
-                                                                                            ()
-                                                                                        ))
-                )
+                    ]))
         page
 
     // Note, this declaration is needed if you enable LiveUpdate
