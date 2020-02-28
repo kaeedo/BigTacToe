@@ -40,14 +40,7 @@ module App =
                             let canvas = surface.Canvas
 
                             canvas.Clear() 
-                            use mainLinePaint = new SKPaint(Color = Color.Blue.ToSKColor(), StrokeWidth = 10.0f, IsStroke = true)
-                            use smallLinePaint = new SKPaint(Color = Color.Black.ToSKColor(), StrokeWidth = 5.0f, IsStroke = true)
-
-                            canvas.DrawLine(SKPoint(float32 (info.Width / 3), 0.0f), SKPoint(float32 (info.Width / 3), float32 info.Height), mainLinePaint)
-                            canvas.DrawLine(SKPoint(float32 ((info.Width / 3) * 2), 0.0f), SKPoint(float32 ((info.Width / 3) * 2), float32 info.Height), mainLinePaint)
-
-                            canvas.DrawLine(SKPoint(0.0f, float32 (info.Height / 3)), SKPoint(float32 info.Width, float32 (info.Height / 3)), mainLinePaint)
-                            canvas.DrawLine(SKPoint(0.0f, float32 ((info.Height / 3) * 2)), SKPoint(float32 info.Width, float32 ((info.Height / 3) * 2)), mainLinePaint)
+                            Board.drawLargeBoard args
                         ),
                         horizontalOptions = LayoutOptions.FillAndExpand, 
                         verticalOptions = LayoutOptions.FillAndExpand, 
