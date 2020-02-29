@@ -40,7 +40,7 @@ module App =
                             let canvas = surface.Canvas
 
                             canvas.Clear() 
-                            Board.drawLargeBoard args
+                            Board.drawBoard args
                         ),
                         horizontalOptions = LayoutOptions.FillAndExpand, 
                         verticalOptions = LayoutOptions.FillAndExpand, 
