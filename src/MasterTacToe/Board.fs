@@ -37,56 +37,25 @@ module Board =
     let highlightSquare (args: SKPaintSurfaceEventArgs) (touchPoint: SKPoint) =
         let width = float32 args.Info.Width
         let height = float32 args.Info.Height
-        let cellWidth = (width - (6.0f * smallStroke) - (2.0f * largeStroke)) / 9.0f
-        let cellWidth = (width ) / 9.0f
+        let cellWidth = width / 9.0f
+        let cellHeight = height / 9.0f
 
         let cells =
             seq {
-                yield (0.0f, cellWidth)
-                yield (cellWidth * 1.0f , cellWidth * 2.0f)
-                yield (cellWidth * 2.0f , cellWidth * 3.0f)
-
-                yield (cellWidth * 3.0f , cellWidth * 4.0f)
-                yield (cellWidth * 4.0f , cellWidth * 5.0f)
-                yield (cellWidth * 5.0f , cellWidth * 6.0f)
-
-                yield (cellWidth * 6.0f , cellWidth * 7.0f)
-                yield (cellWidth * 7.0f , cellWidth * 8.0f)
-                yield (cellWidth * 8.0f , cellWidth * 9.0f)
-            } |> List.ofSeq
-
-        let index =
-            cells 
-            |> List.tryFindIndex (fun (startPoint, endPoint) ->
-                let startPoint = SKPoint(startPoint, 0.0f)
-                let endPoint = SKPoint(endPoint, 0.0f)
-
-                touchPoint.X >= startPoint.X && touchPoint.X < endPoint.X
-            )
+                for i in 0.0f..9.0f do
+                    for j in 0.0f..9.0f do
+                        let left = cellWidth * i
+                        let top = cellHeight * j
+                        let right = left + cellWidth
+                        let bottom = top + cellHeight
+                        yield SKRect(left, top, right, bottom)
+            }
 
         cells 
-        |> List.tryFind (fun (startPoint, endPoint) ->
-            let startPoint = SKPoint(startPoint, 0.0f)
-            let endPoint = SKPoint(endPoint, 0.0f)
-
-            touchPoint.X >= startPoint.X && touchPoint.X < endPoint.X
+        |> Seq.tryFind (fun rect ->
+            rect.Contains(touchPoint)
         )
-        |> Option.iter (fun tc ->
+        |> Option.iter (fun rect ->
             use squarePaint = new SKPaint(Color = SKColor.Parse("#F00"))
-            args.Surface.Canvas.DrawRect(fst tc, 0.0f, cellWidth, height, squarePaint)
+            args.Surface.Canvas.DrawRect(rect, squarePaint)
         )
-
-
-        // 0 -> 175
-        // 180 -> 355
-        // 360 -> 535
-
-        // 545 -> 720
-        // 725 -> 900
-        // 910 -> 1085
-
-        // 1095 -> 1270
-        // 1275 -> 1450
-        // 1455 -> 1630
-
-        // x: 830
