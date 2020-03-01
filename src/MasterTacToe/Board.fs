@@ -40,18 +40,15 @@ module Board =
         let cellWidth = width / 9.0f
         let cellHeight = height / 9.0f
 
-        let cells =
-            seq {
-                for i in 0.0f..9.0f do
-                    for j in 0.0f..9.0f do
-                        let left = cellWidth * i
-                        let top = cellHeight * j
-                        let right = left + cellWidth
-                        let bottom = top + cellHeight
-                        yield SKRect(left, top, right, bottom)
-            }
-
-        cells 
+        seq {
+            for i in 0.0f..8.0f do
+                for j in 0.0f..8.0f do
+                    let left = cellWidth * i
+                    let top = cellHeight * j
+                    let right = left + cellWidth
+                    let bottom = top + cellHeight
+                    yield SKRect(left, top, right, bottom)
+        }
         |> Seq.tryFind (fun rect ->
             rect.Contains(touchPoint)
         )
