@@ -41,6 +41,7 @@ module App =
 
                             canvas.Clear() 
                             Board.drawBoard args
+                            Board.highlightSquare args model.TouchPoint
                         ),
                         horizontalOptions = LayoutOptions.FillAndExpand, 
                         verticalOptions = LayoutOptions.FillAndExpand, 
@@ -48,6 +49,7 @@ module App =
                             if args.InContact then
                                 dispatch (SKSurfaceTouched args.Location)
                         ))
+                    View.Label(text = sprintf "touched X: %f Y: %f" model.TouchPoint.X model.TouchPoint.Y, horizontalOptions = LayoutOptions.Center, width=200.0, horizontalTextAlignment=TextAlignment.Center)
                     ]))
         page
 
