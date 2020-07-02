@@ -1,6 +1,6 @@
 ﻿using System.Windows;
 
-namespace MasterTacToe.Wpf
+namespace BigTacToe.Wpf
 {
     /// <summary>
     /// Interaction logic for App.xaml

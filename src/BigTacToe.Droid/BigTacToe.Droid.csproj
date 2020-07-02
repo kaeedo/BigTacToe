@@ -122,9 +122,9 @@
     <AndroidResource Include="Resources\layout\Toolbar.axml" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\MasterTacToe\MasterTacToe.fsproj">
+    <ProjectReference Include="..\BigTacToe\BigTacToe.fsproj">
       <Project>{4bc4debe-9036-47df-90bf-87a0aa993476}</Project>
-      <Name>MasterTacToe</Name>
+      <Name>BigTacToe</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\Android\Xamarin.Android.CSharp.targets" />

@@ -1,4 +1,4 @@
-﻿namespace MasterTacToe
+﻿namespace BigTacToe
 
 open System.Diagnostics
 open Fabulous
@@ -8,44 +8,35 @@ open Xamarin.Forms
 open SkiaSharp
 open SkiaSharp.Views.Forms
 
-module App = 
-    type Model = 
-      { TouchPoint: SKPoint
-        StackLayout : ViewRef<StackLayout> }
-
-    type Msg = 
-        | SKSurfaceTouched of SKPoint
-
-    let initModel = { StackLayout = ViewRef<StackLayout>(); TouchPoint = SKPoint.Empty }
-
-    let init () = initModel, Cmd.none
+module App =
+    let init () = Types.initModel, Cmd.none
 
     let update msg model =
         match msg with
         | SKSurfaceTouched point -> { model with TouchPoint = point }, Cmd.none
 
     let view (model: Model) dispatch =
-        let page = 
+        let page =
             View.ContentPage(
-              content = View.StackLayout(padding = Thickness 20.0, 
+              content = View.StackLayout(padding = Thickness 20.0,
                 verticalOptions = LayoutOptions.FillAndExpand,
                 ref = model.StackLayout,
-                children = [ 
+                children = [
                     View.SKCanvasView(
                         invalidate = true,
-                        enableTouchEvents = true, 
-                        paintSurface = (fun args -> 
+                        enableTouchEvents = true,
+                        paintSurface = (fun args ->
                             let info = args.Info
                             let surface = args.Surface
                             let canvas = surface.Canvas
 
-                            canvas.Clear() 
+                            canvas.Clear()
                             Board.drawBoard args
                             Board.highlightSquare args model.TouchPoint
                         ),
-                        horizontalOptions = LayoutOptions.FillAndExpand, 
-                        verticalOptions = LayoutOptions.FillAndExpand, 
-                        touch = (fun args -> 
+                        horizontalOptions = LayoutOptions.FillAndExpand,
+                        verticalOptions = LayoutOptions.FillAndExpand,
+                        touch = (fun args ->
                             if args.InContact then
                                 dispatch (SKSurfaceTouched args.Location)
                         ))
@@ -56,10 +47,10 @@ module App =
     // Note, this declaration is needed if you enable LiveUpdate
     let program = Program.mkProgram init update view
 
-type App () as app = 
+type App () as app =
     inherit Application ()
 
-    let runner = 
+    let runner =
         App.program
 #if DEBUG
         |> Program.withConsoleTrace
@@ -67,28 +58,28 @@ type App () as app =
         |> XamarinFormsProgram.run app
 
 #if DEBUG
-    // Uncomment this line to enable live update in debug mode. 
+    // Uncomment this line to enable live update in debug mode.
     // See https://fsprojects.github.io/Fabulous/Fabulous.XamarinForms/tools.html#live-update for further  instructions.
     //
     do runner.EnableLiveUpdate()
-#endif    
+#endif
 
     // Uncomment this code to save the application state to app.Properties using Newtonsoft.Json
     // See https://fsprojects.github.io/Fabulous/Fabulous.XamarinForms/models.html#saving-application-state for further  instructions.
 #if APPSAVE
     let modelId = "model"
-    override __.OnSleep() = 
+    override __.OnSleep() =
 
         let json = Newtonsoft.Json.JsonConvert.SerializeObject(runner.CurrentModel)
         Console.WriteLine("OnSleep: saving model into app.Properties, json = {0}", json)
 
         app.Properties.[modelId] <- json
 
-    override __.OnResume() = 
+    override __.OnResume() =
         Console.WriteLine "OnResume: checking for model in app.Properties"
-        try 
+        try
             match app.Properties.TryGetValue modelId with
-            | true, (:? string as json) -> 
+            | true, (:? string as json) ->
 
                 Console.WriteLine("OnResume: restoring model from app.Properties, json = {0}", json)
                 let model = Newtonsoft.Json.JsonConvert.DeserializeObject<App.Model>(json)
@@ -97,10 +88,10 @@ type App () as app =
                 runner.SetCurrentModel (model, Cmd.none)
 
             | _ -> ()
-        with ex -> 
+        with ex ->
             App.program.onError("Error while restoring model found in app.Properties", ex)
 
-    override this.OnStart() = 
+    override this.OnStart() =
         Console.WriteLine "OnStart: using same logic as OnResume()"
         this.OnResume()
 #endif

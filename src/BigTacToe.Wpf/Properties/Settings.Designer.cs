@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace MasterTacToe.Wpf.Properties
+namespace BigTacToe.Wpf.Properties
 {
 
 

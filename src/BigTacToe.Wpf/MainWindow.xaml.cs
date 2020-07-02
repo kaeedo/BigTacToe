@@ -1,6 +1,6 @@
 ﻿using Xamarin.Forms.Platform.WPF;
 
-namespace MasterTacToe.Wpf
+namespace BigTacToe.Wpf
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
@@ -11,7 +11,7 @@ namespace MasterTacToe.Wpf
         {
             InitializeComponent();
             Xamarin.Forms.Forms.Init();
-            LoadApplication(new MasterTacToe.App());
+            LoadApplication(new BigTacToe.App());
         }
     }
 }

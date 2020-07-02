@@ -1,4 +1,4 @@
-﻿namespace MasterTacToe
+﻿namespace BigTacToe
 
 open SkiaSharp
 open SkiaSharp.Views.Forms
@@ -21,11 +21,11 @@ module Board =
         let ninthWidth = width / 9.0f
         let ninthHeight = height / 9.0f
 
-        let verticalLines = 
-            [ for i in 1.0f .. 8.0f do 
+        let verticalLines =
+            [ for i in 1.0f .. 8.0f do
                 yield SKPoint(ninthWidth * i, 0.0f), SKPoint(ninthWidth * i, height) ]
-        let horizontalLines = 
-            [ for i in 1.0f .. 8.0f do 
+        let horizontalLines =
+            [ for i in 1.0f .. 8.0f do
                 yield SKPoint(0.0f, ninthHeight * i), SKPoint(width, ninthHeight * i) ]
 
         List.iteri2 (fun i (startPoint1, endPoint1) (startPoint2, endPoint2) ->
