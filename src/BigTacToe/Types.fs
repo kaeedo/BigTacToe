@@ -5,43 +5,45 @@ open Xamarin.Forms
 open Fabulous
 
 type Meeple =
-    | Empty = 0
-    | Player = 1
-    | Opponent = 2
+    | Player = 0
+    | Opponent = 1
 
-type Tile =
-    | Meeple of Meeple
-    | SubBoard of Board
+type SubBoard =
+    { Winner: Meeple option
+      Rect: SKRect
+      Tiles: (SKRect * (Meeple option)) [,] }
 
-and Board =
-    { Winner: Meeple
-      Tiles: Tile [,] }
+type Board =
+    { Winner: Meeple option
+      Size: SKSizeI
+      SubBoards: SubBoard [,] }
 
 type Model =
-  { TouchPoint: SKPoint
-    CurrentPlayer: Meeple
+  { CurrentPlayer: Meeple option
     Board: Board
+    TouchPoint: SKPoint
     StackLayout: ViewRef<StackLayout> }
 
 type Msg =
+    | ResizeCanvas of SKSizeI
     | SKSurfaceTouched of SKPoint
 
 module Types =
     let private initBoard =
-        let subBoard = Array2D.init 3 3 (fun _ _ -> Meeple <| Meeple.Empty)
+        let subBoard = 
+            { SubBoard.Winner = None 
+              Rect = SKRect()
+              Tiles = Array2D.init 3 3 (fun _ _ -> SKRect(), None) }
+
         let bigBoard =
-            { Board.Winner = Meeple.Empty
-              Tiles = Array2D.init 3 3 (fun _ _ -> 
-                { Board.Winner = Meeple.Empty
-                  Tiles = subBoard }
-                |> SubBoard
-              ) 
-            }
+            { Board.Winner = None
+              Size = SKSizeI()
+              SubBoards = Array2D.init 3 3 (fun _ _ -> subBoard) }
 
         bigBoard
 
     let initModel = 
         { Model.StackLayout = ViewRef<StackLayout>()
-          CurrentPlayer = Meeple.Empty
-          Board = initBoard
-          TouchPoint = SKPoint.Empty }
+          CurrentPlayer = None
+          TouchPoint = SKPoint()
+          Board = initBoard }

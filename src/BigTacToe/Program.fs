@@ -11,41 +11,63 @@ open SkiaSharp.Views.Forms
 module App =
     let init () = Types.initModel, Cmd.none
 
-    let update msg model =
-        match msg with
-        | SKSurfaceTouched point -> { model with TouchPoint = point }, Cmd.none
-
     let view (model: Model) dispatch =
+        let subBoard = 
+            model.Board.SubBoards
+            |> Seq.cast<SubBoard>
+            |> Seq.tryFind (fun sb ->
+                sb.Rect.Contains(model.TouchPoint)
+            )
+
+        let touchedTile =
+            subBoard
+            |> Option.bind (fun sb ->
+                sb.Tiles
+                |> Seq.cast<SKRect * (Meeple option)>
+                |> Seq.tryFind (fun (rect, m) ->
+                    rect.Contains(model.TouchPoint)
+                )
+            )
+
         let page =
             View.ContentPage(
               content = View.StackLayout(padding = Thickness 20.0,
                 verticalOptions = LayoutOptions.FillAndExpand,
                 ref = model.StackLayout,
                 children = [
-                    View.SKCanvasView(
-                        invalidate = true,
-                        enableTouchEvents = true,
-                        paintSurface = (fun args ->
-                            let info = args.Info
-                            let surface = args.Surface
-                            let canvas = surface.Canvas
+                    dependsOn (model.Board, model.TouchPoint) (fun _ (board, touchPoint) ->
+                        View.SKCanvasView(
+                            invalidate = true,
+                            enableTouchEvents = true,
+                            paintSurface = (fun args ->
+                                dispatch <| ResizeCanvas args.Info.Size
 
-                            canvas.Clear()
-                            Board.drawBoard args
-                            Board.highlightSquare args model.TouchPoint
-                        ),
-                        horizontalOptions = LayoutOptions.FillAndExpand,
-                        verticalOptions = LayoutOptions.FillAndExpand,
-                        touch = (fun args ->
-                            if args.InContact then
-                                dispatch (SKSurfaceTouched args.Location)
+                                args.Surface.Canvas.Clear()
+                                
+                                SKBoard.drawBoard args board
+
+                                if touchedTile.IsSome
+                                then SKBoard.highlightSquare args touchedTile.Value
+                            ),
+                            horizontalOptions = LayoutOptions.FillAndExpand,
+                            verticalOptions = LayoutOptions.FillAndExpand,
+                            touch = (fun args ->
+                                if args.InContact then
+                                    dispatch (SKSurfaceTouched args.Location)
                         ))
+                    )
+                    
                     View.Label(text = sprintf "touched X: %f Y: %f" model.TouchPoint.X model.TouchPoint.Y, horizontalOptions = LayoutOptions.Center, width=200.0, horizontalTextAlignment=TextAlignment.Center)
+                    if subBoard.IsSome
+                    then View.Label(text = sprintf "touched SubBoard: %A" subBoard.Value.Rect.Location, horizontalOptions = LayoutOptions.Center, width=200.0, horizontalTextAlignment=TextAlignment.Center)
+
+                    if touchedTile.IsSome
+                    then View.Label(text = sprintf "touched Tile: %A" (fst touchedTile.Value).Location, horizontalOptions = LayoutOptions.Center, width=200.0, horizontalTextAlignment=TextAlignment.Center)
                     ]))
         page
 
     // Note, this declaration is needed if you enable LiveUpdate
-    let program = Program.mkProgram init update view
+    let program = Program.mkProgram init Messages.update view
 
 type App () as app =
     inherit Application ()
