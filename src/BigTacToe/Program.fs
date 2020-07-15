@@ -12,23 +12,6 @@ module App =
     let init () = Types.initModel, Cmd.none
 
     let view (model: Model) dispatch =
-        let subBoard = 
-            model.Board.SubBoards
-            |> Seq.cast<SubBoard>
-            |> Seq.tryFind (fun sb ->
-                sb.Rect.Contains(model.TouchPoint)
-            )
-
-        let touchedTile =
-            subBoard
-            |> Option.bind (fun sb ->
-                sb.Tiles
-                |> Seq.cast<SKRect * (Meeple option)>
-                |> Seq.tryFind (fun (rect, m) ->
-                    rect.Contains(model.TouchPoint)
-                )
-            )
-
         let page =
             View.ContentPage(
               content = View.StackLayout(padding = Thickness 20.0,
@@ -46,8 +29,7 @@ module App =
                                 
                                 SKBoard.drawBoard args board
 
-                                if touchedTile.IsSome
-                                then SKBoard.highlightSquare args touchedTile.Value
+                                SKBoard.highlightSquare args model.Board
                             ),
                             horizontalOptions = LayoutOptions.FillAndExpand,
                             verticalOptions = LayoutOptions.FillAndExpand,
@@ -58,11 +40,6 @@ module App =
                     )
                     
                     View.Label(text = sprintf "touched X: %f Y: %f" model.TouchPoint.X model.TouchPoint.Y, horizontalOptions = LayoutOptions.Center, width=200.0, horizontalTextAlignment=TextAlignment.Center)
-                    if subBoard.IsSome
-                    then View.Label(text = sprintf "touched SubBoard: %A" subBoard.Value.Rect.Location, horizontalOptions = LayoutOptions.Center, width=200.0, horizontalTextAlignment=TextAlignment.Center)
-
-                    if touchedTile.IsSome
-                    then View.Label(text = sprintf "touched Tile: %A" (fst touchedTile.Value).Location, horizontalOptions = LayoutOptions.Center, width=200.0, horizontalTextAlignment=TextAlignment.Center)
                     ]))
         page
 

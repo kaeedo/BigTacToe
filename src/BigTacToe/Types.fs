@@ -8,10 +8,12 @@ type Meeple =
     | Player = 0
     | Opponent = 1
 
+type Tile = SKRect * (Meeple option)
+
 type SubBoard =
     { Winner: Meeple option
       Rect: SKRect
-      Tiles: (SKRect * (Meeple option)) [,] }
+      Tiles: Tile [,] }
 
 type Board =
     { Winner: Meeple option
@@ -45,5 +47,5 @@ module Types =
     let initModel = 
         { Model.StackLayout = ViewRef<StackLayout>()
           CurrentPlayer = None
-          TouchPoint = SKPoint()
+          TouchPoint = SKPoint(-1.0f, -1.0f)
           Board = initBoard }
