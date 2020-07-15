@@ -13,41 +13,47 @@ module App =
 
     let view (model: Model) dispatch =
         let page =
-            View.ContentPage(
-              content = View.StackLayout(padding = Thickness 20.0,
-                verticalOptions = LayoutOptions.FillAndExpand,
-                ref = model.StackLayout,
-                children = [
-                    dependsOn (model.Board, model.TouchPoint) (fun _ (board, touchPoint) ->
-                        View.SKCanvasView(
-                            invalidate = true,
-                            enableTouchEvents = true,
-                            paintSurface = (fun args ->
-                                dispatch <| ResizeCanvas args.Info.Size
+            View.ContentPage
+                (content =
+                    View.StackLayout
+                        (padding = Thickness 20.0,
+                         verticalOptions = LayoutOptions.FillAndExpand,
+                         ref = model.StackLayout,
+                         children =
+                             [ dependsOn (model.Board, model.TouchPoint) (fun _ (board, touchPoint) ->
+                                   View.SKCanvasView
+                                       (invalidate = true,
+                                        enableTouchEvents = true,
+                                        paintSurface =
+                                            (fun args ->
+                                                dispatch <| ResizeCanvas args.Info.Size
 
-                                args.Surface.Canvas.Clear()
-                                
-                                SKBoard.drawBoard args board
+                                                args.Surface.Canvas.Clear()
 
-                                SKBoard.highlightSquare args model.Board
-                            ),
-                            horizontalOptions = LayoutOptions.FillAndExpand,
-                            verticalOptions = LayoutOptions.FillAndExpand,
-                            touch = (fun args ->
-                                if args.InContact then
-                                    dispatch (SKSurfaceTouched args.Location)
-                        ))
-                    )
-                    
-                    View.Label(text = sprintf "touched X: %f Y: %f" model.TouchPoint.X model.TouchPoint.Y, horizontalOptions = LayoutOptions.Center, width=200.0, horizontalTextAlignment=TextAlignment.Center)
-                    ]))
+                                                SKBoard.drawBoard args board
+
+                                                SKBoard.drawMeeple args model.Board),
+                                        horizontalOptions = LayoutOptions.FillAndExpand,
+                                        verticalOptions = LayoutOptions.FillAndExpand,
+                                        touch =
+                                            (fun args ->
+                                                if args.InContact
+                                                then dispatch (SKSurfaceTouched args.Location))))
+
+                               View.Label
+                                   (text = sprintf "touched X: %f Y: %f" model.TouchPoint.X model.TouchPoint.Y,
+                                    horizontalOptions = LayoutOptions.Center,
+                                    width = 200.0,
+                                    horizontalTextAlignment = TextAlignment.Center) ]))
+
         page
 
     // Note, this declaration is needed if you enable LiveUpdate
-    let program = Program.mkProgram init Messages.update view
+    let program =
+        Program.mkProgram init Messages.update view
 
-type App () as app =
-    inherit Application ()
+type App() as app =
+    inherit Application()
 
     let runner =
         App.program
@@ -63,13 +69,16 @@ type App () as app =
     do runner.EnableLiveUpdate()
 #endif
 
-    // Uncomment this code to save the application state to app.Properties using Newtonsoft.Json
-    // See https://fsprojects.github.io/Fabulous/Fabulous.XamarinForms/models.html#saving-application-state for further  instructions.
+// Uncomment this code to save the application state to app.Properties using Newtonsoft.Json
+// See https://fsprojects.github.io/Fabulous/Fabulous.XamarinForms/models.html#saving-application-state for further  instructions.
 #if APPSAVE
     let modelId = "model"
+
     override __.OnSleep() =
 
-        let json = Newtonsoft.Json.JsonConvert.SerializeObject(runner.CurrentModel)
+        let json =
+            Newtonsoft.Json.JsonConvert.SerializeObject(runner.CurrentModel)
+
         Console.WriteLine("OnSleep: saving model into app.Properties, json = {0}", json)
 
         app.Properties.[modelId] <- json
@@ -81,18 +90,17 @@ type App () as app =
             | true, (:? string as json) ->
 
                 Console.WriteLine("OnResume: restoring model from app.Properties, json = {0}", json)
-                let model = Newtonsoft.Json.JsonConvert.DeserializeObject<App.Model>(json)
+
+                let model =
+                    Newtonsoft.Json.JsonConvert.DeserializeObject<App.Model>(json)
 
                 Console.WriteLine("OnResume: restoring model from app.Properties, model = {0}", (sprintf "%0A" model))
-                runner.SetCurrentModel (model, Cmd.none)
+                runner.SetCurrentModel(model, Cmd.none)
 
             | _ -> ()
-        with ex ->
-            App.program.onError("Error while restoring model found in app.Properties", ex)
+        with ex -> App.program.onError ("Error while restoring model found in app.Properties", ex)
 
     override this.OnStart() =
         Console.WriteLine "OnStart: using same logic as OnResume()"
         this.OnResume()
 #endif
-
-
