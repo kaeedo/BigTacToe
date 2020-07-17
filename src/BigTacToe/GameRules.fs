@@ -30,11 +30,14 @@ module GameRules =
             |> Seq.rev
             |> Seq.forall (fun (_, meeple) -> meeple = (Some currentPlayer))
 
-        [ anyRowWon
-          anyColumnWon
-          diagonalOne
-          diagonalTwo ]
-        |> Seq.exists id
+        if [ anyRowWon
+             anyColumnWon
+             diagonalOne
+             diagonalTwo ]
+           |> Seq.exists id then
+            Some currentPlayer
+        else
+            None
 
     let maybe = MaybeBuilder()
 
@@ -65,7 +68,6 @@ module GameRules =
 
                 index / 3, index % 3
 
-
             let newTiles =
                 touchedSubBoard.Tiles
                 |> Array2D.map (fun t ->
@@ -75,23 +77,27 @@ module GameRules =
                     else
                         t)
 
+            let boardWonBy =
+                calculateSubBoardWinner newTiles model.CurrentPlayer
+
             let newBoard =
                 model.Board.SubBoards
-                |> Array2D.mapi (fun i j sb ->
-                    let isBoardWon =
-                        if calculateSubBoardWinner newTiles model.CurrentPlayer
-                        then Some model.CurrentPlayer
-                        else None
-
-                    let isPlayable = i = subI && j = subJ
-
+                |> Array2D.map (fun sb ->
                     if sb = touchedSubBoard then
                         { touchedSubBoard with
                               Tiles = newTiles
-                              Winner = isBoardWon
-                              IsPlayable = isPlayable }
+                              Winner = boardWonBy }
                     else
-                        { sb with IsPlayable = isPlayable })
+                        sb)
+
+            let freeMove = newBoard.[subI, subJ].Winner.IsSome
+
+            let newBoard =
+                newBoard
+                |> Array2D.mapi (fun i j sb ->
+                    let isPlayable = freeMove || (i = subI && j = subJ)
+
+                    { sb with IsPlayable = isPlayable })
 
             return newBoard
         }
