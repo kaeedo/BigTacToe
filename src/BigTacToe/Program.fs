@@ -1,15 +1,14 @@
 ﻿namespace BigTacToe
 
-open System.Diagnostics
 open Fabulous
 open Fabulous.XamarinForms
 open Fabulous.XamarinForms.LiveUpdate
 open Xamarin.Forms
-open SkiaSharp
-open SkiaSharp.Views.Forms
 
 module App =
     let init () = Types.initModel, Cmd.none
+    
+    // Remember MiniMax algorithm
 
     let view (model: Model) dispatch =
         let page =
@@ -30,9 +29,9 @@ module App =
 
                                                 args.Surface.Canvas.Clear()
 
-                                                SKBoard.drawBoard args board
+                                                Render.drawBoard args board
 
-                                                SKBoard.drawMeeple args model.Board),
+                                                Render.drawMeeple args model.Board),
                                         horizontalOptions = LayoutOptions.FillAndExpand,
                                         verticalOptions = LayoutOptions.FillAndExpand,
                                         touch =

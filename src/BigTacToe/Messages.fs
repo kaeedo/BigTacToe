@@ -58,46 +58,11 @@ module Messages =
             let board = setBigSize model.Board size
             { model with Board = board }, Cmd.none
         | SKSurfaceTouched point ->
-            let board =
-                maybe {
-                    let! touchedSubBoard =
-                        model.Board.SubBoards
-                        |> Seq.cast<SubBoard>
-                        |> Seq.filter (fun sb -> sb.IsPlayable)
-                        |> Seq.tryFind (fun sb -> sb.Rect.Contains(point))
-
-                    let! touchedSubTile =
-                        touchedSubBoard.Tiles
-                        |> Seq.cast<Tile>
-                        |> Seq.filter (fun (_, meeple) -> meeple.IsNone)
-                        |> Seq.tryFind (fun (rect, _) -> rect.Contains(point))
-
-                    let newTiles =
-                        touchedSubBoard.Tiles
-                        |> Array2D.map (fun t ->
-                            if t = touchedSubTile then
-                                let (rect, _) = t
-                                rect, Some model.CurrentPlayer
-                            else
-                                t)
-
-                    let newBoard =
-                        model.Board.SubBoards
-                        |> Array2D.map (fun sb ->
-                            if sb = touchedSubBoard then
-                                { touchedSubBoard with
-                                      Tiles = newTiles }
-                            else
-                                sb)
-
-                    return newBoard
-                }
-
-            match board with
+            match updatedBoard model point with
             | None -> { model with TouchPoint = point }, Cmd.none
             | Some b ->
                 { model with
+                      Board = { model.Board with SubBoards = b }
                       CurrentPlayer = togglePlayer model.CurrentPlayer
-                      TouchPoint = point
-                      Board = { model.Board with SubBoards = b } },
+                      TouchPoint = point },
                 Cmd.none
