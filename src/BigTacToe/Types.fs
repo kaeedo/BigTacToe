@@ -23,8 +23,12 @@ type MaybeBuilder() =
     member this.Run(f) = f ()
 
 type Meeple =
-    | Ex = 0
-    | Oh = 1
+    | Ex
+    | Oh
+    with override this.ToString() =
+            match this with
+            | Ex -> "X"
+            | Oh -> "O"
 
 type BoardWinner =
     | Player of Meeple

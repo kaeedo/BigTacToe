@@ -7,10 +7,17 @@ open Xamarin.Forms
 
 module App =
     let init () = Types.initModel, Cmd.none
-    
+
     // Remember MiniMax algorithm
 
     let view (model: Model) dispatch =
+        let gameStatus =
+            match model.Board.Winner with
+            | None -> View.Label(text = sprintf "It is %s turn to play" (model.CurrentPlayer.ToString()))
+            | Some w ->
+                match w with
+                | Draw -> View.Label(text = "It's a tie game. Nobody wins")
+                | Player p -> View.Label(text = sprintf "%s wins!" (p.ToString()))
         let page =
             View.ContentPage
                 (content =
@@ -19,7 +26,8 @@ module App =
                          verticalOptions = LayoutOptions.FillAndExpand,
                          ref = model.StackLayout,
                          children =
-                             [ dependsOn (model.Board, model.TouchPoint) (fun _ (board, touchPoint) ->
+                             [  gameStatus
+                                dependsOn (model.Board, model.TouchPoint) (fun _ (board, touchPoint) ->
                                    View.SKCanvasView
                                        (invalidate = true,
                                         enableTouchEvents = true,
@@ -37,13 +45,7 @@ module App =
                                         touch =
                                             (fun args ->
                                                 if args.InContact
-                                                then dispatch (SKSurfaceTouched args.Location))))
-
-                               View.Label
-                                   (text = sprintf "touched X: %f Y: %f" model.TouchPoint.X model.TouchPoint.Y,
-                                    horizontalOptions = LayoutOptions.Center,
-                                    width = 200.0,
-                                    horizontalTextAlignment = TextAlignment.Center) ]))
+                                                then dispatch (SKSurfaceTouched args.Location)))) ]))
 
         page
 

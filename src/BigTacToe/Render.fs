@@ -82,9 +82,6 @@ module Render =
 
         use transparentPaint = new SKPaint(Color = Colors.gray)
 
-        // draw main winner
-        drawWinner board.Winner canvas (SKRect(0.0f, 0.0f, float32 board.Size.Width, float32 board.Size.Height))
-
         board.SubBoards
         |> Array2D.iter (fun sb ->
             sb.Tiles
@@ -99,6 +96,9 @@ module Render =
 
 
             drawWinner sb.Winner canvas sb.Rect)
+
+        // draw main winner
+        drawWinner board.Winner canvas (SKRect(0.0f, 0.0f, float32 board.Size.Width, float32 board.Size.Height))
 
     let drawMeeple (args: SKPaintSurfaceEventArgs) (board: Board) =
         use canvas = args.Surface.Canvas

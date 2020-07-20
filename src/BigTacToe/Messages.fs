@@ -62,7 +62,10 @@ module Messages =
             | None -> { model with TouchPoint = point }, Cmd.none
             | Some b ->
                 { model with
-                      Board = { model.Board with SubBoards = b }
+                      Board =
+                          { model.Board with
+                                SubBoards = b
+                                Winner = calculateGameWinner b model.CurrentPlayer }
                       CurrentPlayer = togglePlayer model.CurrentPlayer
                       TouchPoint = point },
                 Cmd.none

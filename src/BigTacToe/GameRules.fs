@@ -3,31 +3,29 @@
 open SkiaSharp
 
 module GameRules =
-    let private calculateSubBoardWinner (tiles: Tile [,]) currentPlayer =
+    let private calculateBoardWinner (tiles: Meeple option [,]) currentPlayer =
         let checks = [ 0; 1; 2 ]
+
+        let allSameMeeple meeple = meeple = (Some currentPlayer)
 
         let anyRowWon =
             checks
-            |> Seq.map (fun i ->
-                tiles.[i, *]
-                |> Seq.forall (fun (_, meeple) -> meeple = (Some currentPlayer)))
+            |> Seq.map (fun i -> tiles.[i, *] |> Seq.forall allSameMeeple)
             |> Seq.exists id
 
         let anyColumnWon =
             checks
-            |> Seq.map (fun i ->
-                tiles.[*, i]
-                |> Seq.forall (fun (_, meeple) -> meeple = (Some currentPlayer)))
+            |> Seq.map (fun i -> tiles.[*, i] |> Seq.forall allSameMeeple)
             |> Seq.exists id
 
         let diagonalOne =
             checks
             |> Seq.map (fun i -> tiles.[i, i])
-            |> Seq.forall (fun (_, meeple) -> meeple = (Some currentPlayer))
+            |> Seq.forall allSameMeeple
 
         let diagonalTwo =
             Seq.map2 (fun i j -> tiles.[i, j]) checks (checks |> Seq.rev)
-            |> Seq.forall (fun (_, meeple) -> meeple = (Some currentPlayer))
+            |> Seq.forall allSameMeeple
 
         if [ anyRowWon
              anyColumnWon
@@ -83,7 +81,10 @@ module GameRules =
                         t)
 
             let boardWonBy =
-                match calculateSubBoardWinner newTiles model.CurrentPlayer with
+                let meeples =
+                    newTiles |> Array2D.map (fun nt -> snd nt)
+
+                match calculateBoardWinner meeples model.CurrentPlayer with
                 | Some winner -> Some winner
                 | None -> if isDraw newTiles then Some Draw else None
 
@@ -108,3 +109,14 @@ module GameRules =
 
             return newBoard
         }
+
+    let calculateGameWinner (subBoard: SubBoard [,]) currentPlayer =
+        let meeples =
+            subBoard
+            |> Array2D.map (fun sb ->
+                sb.Winner
+                |> Option.bind (function
+                    | Player m -> Some m
+                    | _ -> None))
+
+        calculateBoardWinner meeples currentPlayer
