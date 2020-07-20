@@ -5,27 +5,41 @@ open Xamarin.Forms
 open Fabulous
 
 type MaybeBuilder() =
-    member this.Bind(value, fn) =
-        match value with
-        | None -> None
-        | Some r -> fn r
+    member this.Bind(m, f) = Option.bind f m
 
-    member this.Return value = Some value
+    member this.Return(x) = Some x
+
+    member this.ReturnFrom(x) = x
+
+    member this.Zero() = None
+
+    member this.Combine(a, b) =
+        match a with
+        | Some _ -> a
+        | None -> b ()
+
+    member this.Delay(f) = f
+
+    member this.Run(f) = f ()
 
 type Meeple =
     | Ex = 0
     | Oh = 1
 
+type BoardWinner =
+    | Player of Meeple
+    | Draw
+
 type Tile = SKRect * (Meeple option)
 
 type SubBoard =
-    { Winner: Meeple option
+    { Winner: BoardWinner option
       Rect: SKRect
       IsPlayable: bool
       Tiles: Tile [,] }
 
 type Board =
-    { Winner: Meeple option
+    { Winner: BoardWinner option
       Size: SKSizeI
       SubBoards: SubBoard [,] }
 

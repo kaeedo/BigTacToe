@@ -13,6 +13,7 @@ module Render =
         let tileBorder = SKColor.Parse("#000")
         let meepleEx = SKColor.Parse("#00F")
         let meepleOh = SKColor.Parse("#00F")
+        let gameDraw = SKColor.Parse("#00F")
 
     let private largeStroke = 10.0f
     let private smallStroke = 5.0f
@@ -48,6 +49,20 @@ module Render =
 
         canvas.DrawCircle(cx, cy, radius, paint)
 
+    let private drawGameDraw (canvas: SKCanvas) (rect: SKRect) =
+        use paint =
+            new SKPaint(Color = Colors.gameDraw, StrokeWidth = smallStroke, IsStroke = true)
+
+        let paddingHorizontal = rect.Width * 0.1f
+        let paddingVertical = rect.Height * 0.1f
+
+        canvas.DrawRect
+            (rect.Left + paddingHorizontal,
+             rect.Top + paddingVertical,
+             rect.Width - paddingHorizontal * 2.0f,
+             rect.Height - paddingVertical * 2.0f,
+             paint)
+
     let drawBoard (args: SKPaintSurfaceEventArgs) (board: Board) =
         use canvas = args.Surface.Canvas
 
@@ -70,7 +85,10 @@ module Render =
 
             match sb.Winner with
             | None -> ()
-            | Some meeple -> if meeple = Meeple.Ex then drawEx canvas sb.Rect else drawOh canvas sb.Rect)
+            | Some w ->
+                match w with
+                | Player m -> if m = Meeple.Ex then drawEx canvas sb.Rect else drawOh canvas sb.Rect
+                | Draw -> drawGameDraw canvas sb.Rect)
 
     let drawMeeple (args: SKPaintSurfaceEventArgs) (board: Board) =
         use canvas = args.Surface.Canvas

@@ -35,10 +35,16 @@ module GameRules =
              diagonalOne
              diagonalTwo ]
            |> Seq.exists id then
-            Some currentPlayer
+            Some(Player currentPlayer)
         else
             None
 
+    let private isDraw (tiles: Tile [,]) =
+        tiles
+        |> Seq.cast<Tile>
+        |> Seq.forall (fun (_, meeple) -> meeple.IsSome)
+
+    // TODO: move this
     let maybe = MaybeBuilder()
 
     let togglePlayer (current: Meeple) =
@@ -78,7 +84,9 @@ module GameRules =
                         t)
 
             let boardWonBy =
-                calculateSubBoardWinner newTiles model.CurrentPlayer
+                match calculateSubBoardWinner newTiles model.CurrentPlayer with
+                | Some winner -> Some winner
+                | None -> if isDraw newTiles then Some Draw else None
 
             let newBoard =
                 model.Board.SubBoards
