@@ -26,8 +26,7 @@ module GameRules =
             |> Seq.forall (fun (_, meeple) -> meeple = (Some currentPlayer))
 
         let diagonalTwo =
-            Seq.map2 (fun i j -> tiles.[i, j]) checks checks
-            |> Seq.rev
+            Seq.map2 (fun i j -> tiles.[i, j]) checks (checks |> Seq.rev)
             |> Seq.forall (fun (_, meeple) -> meeple = (Some currentPlayer))
 
         if [ anyRowWon

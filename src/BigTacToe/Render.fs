@@ -63,6 +63,14 @@ module Render =
              rect.Height - paddingVertical * 2.0f,
              paint)
 
+    let private drawWinner winner canvas rect =
+        winner
+        |> Option.iter (fun w ->
+            match w with
+            | Player m -> if m = Meeple.Ex then drawEx canvas rect else drawOh canvas rect
+            | Draw -> drawGameDraw canvas rect)
+
+
     let drawBoard (args: SKPaintSurfaceEventArgs) (board: Board) =
         use canvas = args.Surface.Canvas
 
@@ -74,21 +82,23 @@ module Render =
 
         use transparentPaint = new SKPaint(Color = Colors.gray)
 
+        // draw main winner
+        drawWinner board.Winner canvas (SKRect(0.0f, 0.0f, float32 board.Size.Width, float32 board.Size.Height))
+
         board.SubBoards
         |> Array2D.iter (fun sb ->
             sb.Tiles
             |> Array2D.iter (fun (rect, _) -> canvas.DrawRect(rect, smallPaint))
 
+            // Draw sub board borders
             canvas.DrawRect(sb.Rect, paint)
+
+            // Draw playability grey out
             if not sb.IsPlayable
             then canvas.DrawRect(sb.Rect, transparentPaint)
 
-            match sb.Winner with
-            | None -> ()
-            | Some w ->
-                match w with
-                | Player m -> if m = Meeple.Ex then drawEx canvas sb.Rect else drawOh canvas sb.Rect
-                | Draw -> drawGameDraw canvas sb.Rect)
+
+            drawWinner sb.Winner canvas sb.Rect)
 
     let drawMeeple (args: SKPaintSurfaceEventArgs) (board: Board) =
         use canvas = args.Surface.Canvas
