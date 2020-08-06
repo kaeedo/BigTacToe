@@ -6,7 +6,7 @@ open Fabulous.XamarinForms.LiveUpdate
 open Xamarin.Forms
 
 module App =
-    let init () = Types.initModel, Cmd.none
+    let init  () = Types.initModel, Cmd.none
 
     // Remember MiniMax algorithm
 
@@ -18,34 +18,47 @@ module App =
                 match w with
                 | Draw -> View.Label(text = "It's a tie game. Nobody wins")
                 | Player p -> View.Label(text = sprintf "%s wins!" (p.ToString()))
+
+        let gameBoard =
+            View.StackLayout
+                (children = [
+                 dependsOn (model.Size, model.Board) (fun _ (size, board) ->
+                     View.SKCanvasView
+                         (invalidate = true,
+                          enableTouchEvents = true,
+                          verticalOptions = LayoutOptions.FillAndExpand,
+                          horizontalOptions = LayoutOptions.FillAndExpand,
+                          paintSurface =
+                              (fun args ->
+                                  dispatch <| ResizeCanvas args.Info.Size
+                         
+                                  args.Surface.Canvas.Clear()
+                         
+                                  Render.drawBoard args board
+                         
+                                  Render.drawMeeple args model.Board),
+                          touch =
+                              (fun args ->
+                                  if args.InContact
+                                  then dispatch (SKSurfaceTouched args.Location))))
+                ])
+
         let page =
+            let dimension = fst model.Size
             View.ContentPage
                 (content =
-                    View.StackLayout
-                        (padding = Thickness 20.0,
-                         verticalOptions = LayoutOptions.FillAndExpand,
-                         ref = model.StackLayout,
-                         children =
-                             [  gameStatus
-                                dependsOn (model.Board, model.TouchPoint) (fun _ (board, touchPoint) ->
-                                   View.SKCanvasView
-                                       (invalidate = true,
-                                        enableTouchEvents = true,
-                                        paintSurface =
-                                            (fun args ->
-                                                dispatch <| ResizeCanvas args.Info.Size
-
-                                                args.Surface.Canvas.Clear()
-
-                                                Render.drawBoard args board
-
-                                                Render.drawMeeple args model.Board),
-                                        horizontalOptions = LayoutOptions.FillAndExpand,
-                                        verticalOptions = LayoutOptions.FillAndExpand,
-                                        touch =
-                                            (fun args ->
-                                                if args.InContact
-                                                then dispatch (SKSurfaceTouched args.Location)))) ]))
+                    View.Grid
+                        (rowdefs = [Absolute 50.0; Star; Absolute 50.0],
+                         coldefs = [Star],
+                         padding = Thickness 20.0,
+                         ref = model.GridLayout,
+                         children = [
+                            gameStatus.BackgroundColor(Color.Red)
+                            gameBoard.Row(1)
+                            View.Button(
+                                text = dimension.ToString()
+                            ).Row(2).BackgroundColor(Color.Green)
+                         ]))
 
         page
 
@@ -69,6 +82,7 @@ type App() as app =
     //
     do runner.EnableLiveUpdate()
 #endif
+  
 
 // Uncomment this code to save the application state to app.Properties using Newtonsoft.Json
 // See https://fsprojects.github.io/Fabulous/Fabulous.XamarinForms/models.html#saving-application-state for further  instructions.

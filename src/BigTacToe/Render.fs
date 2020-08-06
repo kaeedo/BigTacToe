@@ -3,8 +3,6 @@
 open SkiaSharp
 open SkiaSharp.Views.Forms
 
-
-
 [<RequireQualifiedAccess>]
 module Render =
     module private Colors =
@@ -70,7 +68,6 @@ module Render =
             | Player m -> if m = Meeple.Ex then drawEx canvas rect else drawOh canvas rect
             | Draw -> drawGameDraw canvas rect)
 
-
     let drawBoard (args: SKPaintSurfaceEventArgs) (board: Board) =
         use canvas = args.Surface.Canvas
 
@@ -98,7 +95,8 @@ module Render =
             drawWinner sb.Winner canvas sb.Rect)
 
         // draw main winner
-        drawWinner board.Winner canvas (SKRect(0.0f, 0.0f, float32 board.Size.Width, float32 board.Size.Height))
+        let contrainedSize = if board.Size.Width > board.Size.Height then board.Size.Height else board.Size.Width
+        drawWinner board.Winner canvas (SKRect(0.0f, 0.0f, float32 contrainedSize, float32 contrainedSize))
 
     let drawMeeple (args: SKPaintSurfaceEventArgs) (board: Board) =
         use canvas = args.Surface.Canvas

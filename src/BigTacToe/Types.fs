@@ -50,12 +50,14 @@ type Board =
 type Model =
     { CurrentPlayer: Meeple
       Board: Board
+      Size: float * float
       TouchPoint: SKPoint
-      StackLayout: ViewRef<StackLayout> }
+      GridLayout: ViewRef<Grid> }
 
 type Msg =
     | ResizeCanvas of SKSizeI
     | SKSurfaceTouched of SKPoint
+    | OpponentPlayed of (int * int) * (int * int)
 
 module Types =
     let private initBoard =
@@ -73,7 +75,8 @@ module Types =
         bigBoard
 
     let initModel =
-        { Model.StackLayout = ViewRef<StackLayout>()
+        { Model.GridLayout = ViewRef<Grid>()
+          Size = 100.0, 100.0
           CurrentPlayer = Meeple.Ex
           TouchPoint = SKPoint(-1.0f, -1.0f)
           Board = initBoard }

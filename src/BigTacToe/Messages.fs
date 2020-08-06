@@ -35,7 +35,8 @@ module Messages =
             SKRect(left, top, right, bottom), meeple)
 
     let private setBigSize board (size: SKSizeI) =
-        let subSize = SKSizeI(size.Width / 3, size.Height / 3)
+        let contrainedSize = if size.Width > size.Height then size.Height else size.Width
+        let subSize = SKSizeI(contrainedSize / 3, contrainedSize / 3)
 
         let litteBoards =
             board.SubBoards
@@ -58,14 +59,17 @@ module Messages =
             let board = setBigSize model.Board size
             { model with Board = board }, Cmd.none
         | SKSurfaceTouched point ->
-            match updatedBoard model point with
-            | None -> { model with TouchPoint = point }, Cmd.none
-            | Some b ->
-                { model with
-                      Board =
-                          { model.Board with
-                                SubBoards = b
-                                Winner = calculateGameWinner b model.CurrentPlayer }
-                      CurrentPlayer = togglePlayer model.CurrentPlayer
-                      TouchPoint = point },
-                Cmd.none
+            if model.Board.Winner.IsSome then
+                model, Cmd.none
+            else
+                match updatedBoard model point with
+                | None -> { model with TouchPoint = point }, Cmd.none
+                | Some b ->
+                    { model with
+                          Board =
+                              { model.Board with
+                                    SubBoards = b
+                                    Winner = calculateGameWinner b model.CurrentPlayer }
+                          CurrentPlayer = togglePlayer model.CurrentPlayer
+                          TouchPoint = point },
+                    Cmd.none

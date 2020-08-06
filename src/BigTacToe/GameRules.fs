@@ -120,3 +120,24 @@ module GameRules =
                     | _ -> None))
 
         calculateBoardWinner meeples currentPlayer
+
+
+type private GameStateMessage = | GetGameState
+
+//type GameState() =
+//    let agent =
+//        MailboxProcessor.Start(fun inbox ->
+//            let rec messageLoop state =
+//                async {
+//                    let! (message, reply) = inbox.Receive()
+
+//                    match message with
+//                    | GetGameState ->
+//                        reply state
+//                        return! messageLoop state
+//                }
+
+//            messageLoop ())
+
+//    member this.GetGameState() =
+//        agent.PostAndAsyncReply(fun replyChannel -> (GetGameState, replyChannel.Reply))

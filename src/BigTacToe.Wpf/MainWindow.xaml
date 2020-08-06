@@ -6,6 +6,8 @@
         xmlns:wpf="clr-namespace:Xamarin.Forms.Platform.WPF;assembly=Xamarin.Forms.Platform.WPF"
         mc:Ignorable="d"
         WindowState="Normal"
-        Title="Hello WPF" >
+        Height="1280"
+        Width="720"
+        Title="Big Tac Toe" >
 
 </wpf:FormsApplicationPage>
