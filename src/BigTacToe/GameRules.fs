@@ -41,6 +41,56 @@ module GameRules =
         |> Seq.cast<Tile>
         |> Seq.forall (fun (_, meeple) -> meeple.IsSome)
 
+    let private newBoard model subBoard tile =
+        let (sbi, sbj) =
+            let index =
+                model.Board.SubBoards
+                |> Seq.cast<SubBoard>
+                |> Seq.findIndex (fun sb -> sb = subBoard)
+            index / 3, index % 3
+
+        let (ti, tj) = 
+            let index =
+                model.Board.SubBoards.[sbi, sbj].Tiles
+                |> Seq.cast<Tile>
+                |> Seq.findIndex (fun t -> t = tile)
+            index / 3, index % 3
+
+        let newTiles =
+            subBoard.Tiles
+            |> Array2D.map (fun t ->
+                if t = tile then
+                    let (rect, _) = t
+                    rect, Some model.CurrentPlayer
+                else
+                    t)
+
+        let boardWonBy =
+            let meeples =
+                newTiles |> Array2D.map (fun nt -> snd nt)
+
+            match calculateBoardWinner meeples model.CurrentPlayer with
+            | Some winner -> Some winner
+            | None -> if isDraw newTiles then Some Draw else None
+
+        let newBoard =
+            model.Board.SubBoards
+            |> Array2D.map (fun sb ->
+                if sb = subBoard then
+                    { subBoard with
+                          Tiles = newTiles
+                          Winner = boardWonBy }
+                else
+                    sb)
+
+        let freeMove = newBoard.[ti, tj].Winner.IsSome
+
+        newBoard
+        |> Array2D.mapi (fun i j sb ->
+            let isPlayable = sb.Winner.IsNone && (freeMove || (i = ti && j = tj))
+
+            { sb with IsPlayable = isPlayable })
+
     // TODO: move this
     let maybe = MaybeBuilder()
 
@@ -48,6 +98,14 @@ module GameRules =
         match current with
         | Meeple.Ex -> Meeple.Oh
         | Meeple.Oh -> Meeple.Ex
+
+    let playPosition (model: Model) (positionPlayed: PositionPlayed) =
+        let (sbi, sbj), (ti, tj) = positionPlayed
+        let subBoard = model.Board.SubBoards.[sbi, sbj]
+        let tile = subBoard.Tiles.[ti, tj]
+
+        newBoard model subBoard tile
+
 
     let updatedBoard model (point: SKPoint) =
         maybe {
@@ -63,51 +121,7 @@ module GameRules =
                 |> Seq.filter (fun (_, meeple) -> meeple.IsNone)
                 |> Seq.tryFind (fun (rect, _) -> rect.Contains(point))
 
-            let (subI, subJ) =
-                let index =
-                    touchedSubBoard.Tiles
-                    |> Seq.cast<Tile>
-                    |> Seq.findIndex (fun t -> t = touchedSubTile)
-
-                index / 3, index % 3
-
-            let newTiles =
-                touchedSubBoard.Tiles
-                |> Array2D.map (fun t ->
-                    if t = touchedSubTile then
-                        let (rect, _) = t
-                        rect, Some model.CurrentPlayer
-                    else
-                        t)
-
-            let boardWonBy =
-                let meeples =
-                    newTiles |> Array2D.map (fun nt -> snd nt)
-
-                match calculateBoardWinner meeples model.CurrentPlayer with
-                | Some winner -> Some winner
-                | None -> if isDraw newTiles then Some Draw else None
-
-            let newBoard =
-                model.Board.SubBoards
-                |> Array2D.map (fun sb ->
-                    if sb = touchedSubBoard then
-                        { touchedSubBoard with
-                              Tiles = newTiles
-                              Winner = boardWonBy }
-                    else
-                        sb)
-
-            let freeMove = newBoard.[subI, subJ].Winner.IsSome
-
-            let newBoard =
-                newBoard
-                |> Array2D.mapi (fun i j sb ->
-                    let isPlayable = freeMove || (i = subI && j = subJ)
-
-                    { sb with IsPlayable = isPlayable })
-
-            return newBoard
+            return newBoard model touchedSubBoard touchedSubTile
         }
 
     let calculateGameWinner (subBoard: SubBoard [,]) currentPlayer =
@@ -120,24 +134,3 @@ module GameRules =
                     | _ -> None))
 
         calculateBoardWinner meeples currentPlayer
-
-
-type private GameStateMessage = | GetGameState
-
-//type GameState() =
-//    let agent =
-//        MailboxProcessor.Start(fun inbox ->
-//            let rec messageLoop state =
-//                async {
-//                    let! (message, reply) = inbox.Receive()
-
-//                    match message with
-//                    | GetGameState ->
-//                        reply state
-//                        return! messageLoop state
-//                }
-
-//            messageLoop ())
-
-//    member this.GetGameState() =
-//        agent.PostAndAsyncReply(fun replyChannel -> (GetGameState, replyChannel.Reply))

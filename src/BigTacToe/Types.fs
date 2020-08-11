@@ -54,10 +54,12 @@ type Model =
       TouchPoint: SKPoint
       GridLayout: ViewRef<Grid> }
 
+type PositionPlayed = (int * int) * (int * int)
+
 type Msg =
     | ResizeCanvas of SKSizeI
     | SKSurfaceTouched of SKPoint
-    | OpponentPlayed of (int * int) * (int * int)
+    | OpponentPlayed of PositionPlayed
 
 module Types =
     let private initBoard =

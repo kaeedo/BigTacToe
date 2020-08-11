@@ -58,18 +58,27 @@ module Messages =
         | ResizeCanvas size ->
             let board = setBigSize model.Board size
             { model with Board = board }, Cmd.none
-        | SKSurfaceTouched point ->
-            if model.Board.Winner.IsSome then
-                model, Cmd.none
-            else
-                match updatedBoard model point with
-                | None -> { model with TouchPoint = point }, Cmd.none
-                | Some b ->
+        | OpponentPlayed positionPlayed ->
+            let subBoards = playPosition model positionPlayed
+            let model = 
+                { model with
+                        Board =
+                            { model.Board with
+                                SubBoards = subBoards
+                                Winner = calculateGameWinner subBoards model.CurrentPlayer }
+                        CurrentPlayer = togglePlayer model.CurrentPlayer }
+            model, Cmd.none
+        | SKSurfaceTouched point when
+            model.CurrentPlayer = Meeple.Ex && model.Board.Winner.IsNone ->
+            match updatedBoard model point with
+            | None -> { model with TouchPoint = point }, Cmd.none
+            | Some b ->
+                let model = 
                     { model with
-                          Board =
-                              { model.Board with
+                            Board =
+                                { model.Board with
                                     SubBoards = b
                                     Winner = calculateGameWinner b model.CurrentPlayer }
-                          CurrentPlayer = togglePlayer model.CurrentPlayer
-                          TouchPoint = point },
-                    Cmd.none
+                            CurrentPlayer = togglePlayer model.CurrentPlayer
+                            TouchPoint = point }
+                model, Cmd.ofAsyncMsg <| RemotePlayer.playPosition model
