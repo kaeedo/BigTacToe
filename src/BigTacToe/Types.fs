@@ -3,7 +3,6 @@
 open SkiaSharp
 open Xamarin.Forms
 open Fabulous
-open System.Diagnostics
 
 type MaybeBuilder() =
     member this.Bind(m, f) = Option.bind f m
@@ -35,11 +34,13 @@ type BoardWinner =
     | Player of Meeple
     | Draw
 
-type Tile = SKRect * (Meeple option)
+type Rect = float32 * float32 * float32 * float32 // left, top, right, bottom
+
+type Tile = Rect * (Meeple option)
 
 type SubBoard =
     { Winner: BoardWinner option
-      Rect: SKRect
+      Rect: Rect
       IsPlayable: bool
       Tiles: Tile [,] }
     with 
@@ -52,7 +53,7 @@ type SubBoard =
 
 type Board =
     { Winner: BoardWinner option
-      Size: SKSizeI
+      Size: int * int
       SubBoards: SubBoard [,] }
     with 
         member this.GetSubBoardIndex subBoard =
@@ -65,12 +66,13 @@ type Board =
 type Model =
     { CurrentPlayer: Meeple
       Board: Board
-      Size: float * float
-      GridLayout: ViewRef<Grid> }
+      Size: float * float }
 
 type PositionPlayed = (int * int) * (int * int)
 
 type Msg =
+    | DisplayNewGameAlert
+    | NewGameAlertResult of bool
     | ResizeCanvas of SKSizeI
     | SKSurfaceTouched of SKPoint
     | OpponentPlayed of PositionPlayed
@@ -79,19 +81,19 @@ module Types =
     let private initBoard =
         let subBoard =
             { SubBoard.Winner = None
-              Rect = SKRect()
+              Rect = 0.0f, 0.0f, 0.0f, 0.0f
               IsPlayable = true
-              Tiles = Array2D.init 3 3 (fun _ _ -> SKRect(), None) }
+              Tiles = Array2D.init 3 3 (fun _ _ -> (0.0f, 0.0f, 0.0f, 0.0f), None) }
 
         let bigBoard =
             { Board.Winner = None
-              Size = SKSizeI()
+              Size = (0, 0)
               SubBoards = Array2D.init 3 3 (fun _ _ -> subBoard) }
 
         bigBoard
 
     let initModel =
-        { Model.GridLayout = ViewRef<Grid>()
-          Size = 100.0, 100.0
+        { Model.Size = 100.0, 100.0 //GridLayout = ViewRef<Grid>()
+          
           CurrentPlayer = Meeple.Ex
           Board = initBoard }

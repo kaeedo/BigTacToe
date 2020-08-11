@@ -101,13 +101,23 @@ module GameRules =
                 model.Board.SubBoards
                 |> Seq.cast<SubBoard>
                 |> Seq.filter (fun sb -> sb.IsPlayable && sb.Winner.IsNone)
-                |> Seq.tryFind (fun sb -> sb.Rect.Contains(point))
+                |> Seq.tryFind (fun sb -> 
+                    let (left, top, right, bottom) = sb.Rect
+                    let skRect = SKRect(left, top, right, bottom)
+
+                    skRect.Contains(point)
+                )
 
             let! touchedSubTile =
                 touchedSubBoard.Tiles
                 |> Seq.cast<Tile>
                 |> Seq.filter (fun (_, meeple) -> meeple.IsNone)
-                |> Seq.tryFind (fun (rect, _) -> rect.Contains(point))
+                |> Seq.tryFind (fun (rect, _) -> 
+                    let (left, top, right, bottom) = rect
+                    let skRect = SKRect(left, top, right, bottom)
+
+                    skRect.Contains(point)
+                )
 
             return newBoard model touchedSubBoard touchedSubTile
         }

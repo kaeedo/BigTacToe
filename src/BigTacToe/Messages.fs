@@ -3,6 +3,7 @@
 open Fabulous
 open GameRules
 open SkiaSharp
+open Xamarin.Forms
 
 [<RequireQualifiedAccess>]
 module Messages =
@@ -17,25 +18,28 @@ module Messages =
 
         (left, top, right, bottom)
 
-    let private calculateSubTiles (parentRect: SKRect) tiles =
+    let private calculateSubTiles (parentRect: Rect) tiles =
+        let (left, top, right, bottom) = parentRect
+        let skRect = SKRect(left, top, right, bottom)
         let subSize =
-            SKSizeI(int <| parentRect.Width / 3.0f, int <| parentRect.Height / 3.0f)
+            SKSizeI(int <| skRect.Width / 3.0f, int <| skRect.Height / 3.0f)
 
         tiles
         |> Array2D.mapi (fun i j (rect, meeple) ->
             let left =
-                parentRect.Left + float32 (subSize.Width * i)
+                skRect.Left + float32 (subSize.Width * i)
 
             let right = left + float32 subSize.Width
 
             let top =
-                parentRect.Top + float32 (subSize.Height * j)
+                skRect.Top + float32 (subSize.Height * j)
 
             let bottom = top + float32 subSize.Height
-            SKRect(left, top, right, bottom), meeple)
+            Rect(left, top, right, bottom), meeple)
 
-    let private setBigSize board (size: SKSizeI) =
-        let contrainedSize = if size.Width > size.Height then size.Height else size.Width
+    let private setBigSize board (size: int * int) =
+        let (width, height) = size
+        let contrainedSize = if width > height then height else width
         let subSize = SKSizeI(contrainedSize / 3, contrainedSize / 3)
 
         let litteBoards =
@@ -44,10 +48,10 @@ module Messages =
                 let (left, top, right, bottom) =
                     calculateSubBoardRect (float32 i) (float32 j) subSize
 
-                let rect = SKRect(left, top, right, bottom)
+                //let rect = SKRect
                 { subBoard with
-                      Rect = rect
-                      Tiles = calculateSubTiles rect subBoard.Tiles })
+                      Rect = (left, top, right, bottom)
+                      Tiles = calculateSubTiles (left, top, right, bottom) subBoard.Tiles })
 
         { board with
               Board.Size = size
@@ -56,8 +60,20 @@ module Messages =
 
     let update msg (model: Model) =
         match msg with
+        | DisplayNewGameAlert ->
+            let alertResult =
+                async {
+                    let! confirmation = Application.Current.MainPage.DisplayAlert("New Game", "Are you sure you want to start a new game?", "Yes", "No") |> Async.AwaitTask
+                    return NewGameAlertResult confirmation
+                }
+
+            model, Cmd.ofAsyncMsg alertResult
+        | NewGameAlertResult shouldStartNew ->
+            if shouldStartNew
+            then Types.initModel, Cmd.none
+            else model, Cmd.none
         | ResizeCanvas size ->
-            let board = setBigSize model.Board size
+            let board = setBigSize model.Board (size.Width, size.Height)
             { model with Board = board }, Cmd.none
         | OpponentPlayed positionPlayed ->
             let subBoards = playPosition model positionPlayed

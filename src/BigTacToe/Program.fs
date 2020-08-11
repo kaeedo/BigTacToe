@@ -1,23 +1,22 @@
 ﻿namespace BigTacToe
 
+open System
+
 open Fabulous
 open Fabulous.XamarinForms
-open Fabulous.XamarinForms.LiveUpdate
 open Xamarin.Forms
 
 module App =
     let init  () = Types.initModel, Cmd.none
 
-    // Remember MiniMax algorithm
-
     let view (model: Model) dispatch =
         let gameStatus =
             match model.Board.Winner with
-            | None -> View.Label(text = sprintf "It is %s turn to play" (model.CurrentPlayer.ToString()))
+            | None -> View.Label(text = sprintf "It is %s turn to play" (model.CurrentPlayer.ToString()), fontSize = FontSize 24.0, horizontalTextAlignment = TextAlignment.Center)
             | Some w ->
                 match w with
-                | Draw -> View.Label(text = "It's a tie game. Nobody wins")
-                | Player p -> View.Label(text = sprintf "%s wins!" (p.ToString()))
+                | Draw -> View.Label(text = "It's a tie game. Nobody wins", fontSize = FontSize 24.0, horizontalTextAlignment = TextAlignment.Center)
+                | Player p -> View.Label(text = sprintf "%s wins!" (p.ToString()), fontSize = FontSize 24.0, horizontalTextAlignment = TextAlignment.Center)
 
         let gameBoard =
             View.StackLayout
@@ -43,19 +42,19 @@ module App =
                 ])
 
         let page =
-            let dimension = fst model.Size
             View.ContentPage
                 (content =
                     View.Grid
                         (rowdefs = [Absolute 50.0; Star; Absolute 50.0],
                          coldefs = [Star],
                          padding = Thickness 20.0,
-                         ref = model.GridLayout,
+                         ref = ViewRef<Grid>(), //model.GridLayout,
                          children = [
-                            gameStatus.BackgroundColor(Color.Red)
+                            gameStatus
                             gameBoard.Row(1)
                             View.Button(
-                                text = dimension.ToString()
+                                text = "Start new Game",
+                                command = (fun () -> dispatch DisplayNewGameAlert) 
                             ).Row(2).BackgroundColor(Color.Green)
                          ]))
 
@@ -85,7 +84,6 @@ type App() as app =
 
 // Uncomment this code to save the application state to app.Properties using Newtonsoft.Json
 // See https://fsprojects.github.io/Fabulous/Fabulous.XamarinForms/models.html#saving-application-state for further  instructions.
-#if APPSAVE
     let modelId = "model"
 
     override __.OnSleep() =
@@ -106,7 +104,7 @@ type App() as app =
                 Console.WriteLine("OnResume: restoring model from app.Properties, json = {0}", json)
 
                 let model =
-                    Newtonsoft.Json.JsonConvert.DeserializeObject<App.Model>(json)
+                    Newtonsoft.Json.JsonConvert.DeserializeObject<Model>(json)
 
                 Console.WriteLine("OnResume: restoring model from app.Properties, model = {0}", (sprintf "%0A" model))
                 runner.SetCurrentModel(model, Cmd.none)
@@ -117,4 +115,3 @@ type App() as app =
     override this.OnStart() =
         Console.WriteLine "OnStart: using same logic as OnResume()"
         this.OnResume()
-#endif

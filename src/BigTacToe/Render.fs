@@ -86,19 +86,28 @@ module Render =
         board.SubBoards
         |> Array2D.iter (fun sb ->
             sb.Tiles
-            |> Array2D.iter (fun (rect, _) -> canvas.DrawRect(rect, smallPaint))
+            |> Array2D.iter (fun (rect, _) -> 
+                let (left, top, right, bottom) = rect
+                let skRect = SKRect(left, top, right, bottom)
+                canvas.DrawRect(skRect, smallPaint)
+            )
+
+            // Extract this everywhere
+            let (left, top, right, bottom) = sb.Rect
+            let skRect = SKRect(left, top, right, bottom)
 
             // Draw sub board borders
-            canvas.DrawRect(sb.Rect, paint)
+            canvas.DrawRect(skRect, paint)
 
             // Draw playability grey out
             if not sb.IsPlayable
-            then canvas.DrawRect(sb.Rect, transparentPaint)
+            then canvas.DrawRect(skRect, transparentPaint)
 
-            drawWinner sb.Winner canvas sb.Rect)
+            drawWinner sb.Winner canvas skRect)
 
         // draw main winner
-        let constrainedSize = if board.Size.Width > board.Size.Height then board.Size.Height else board.Size.Width
+        let (width, height) = board.Size
+        let constrainedSize = if width > height then height else width
         drawWinner board.Winner canvas (SKRect(0.0f, 0.0f, float32 constrainedSize, float32 constrainedSize))
 
     let drawMeeple (args: SKPaintSurfaceEventArgs) (board: Board) =
@@ -108,8 +117,11 @@ module Render =
         |> Array2D.iter (fun sb ->
             sb.Tiles
             |> Array2D.iter (fun (rect, meeple) ->
+                let (left, top, right, bottom) = rect
+                let skRect = SKRect(left, top, right, bottom)
+
                 meeple
                 |> Option.iter (fun m ->
                     match m with
-                    | Meeple.Ex -> drawEx Colors.meepleEx canvas rect
-                    | Meeple.Oh -> drawOh Colors.meepleOh canvas rect)))
+                    | Meeple.Ex -> drawEx Colors.meepleEx canvas skRect
+                    | Meeple.Oh -> drawOh Colors.meepleOh canvas skRect)))
