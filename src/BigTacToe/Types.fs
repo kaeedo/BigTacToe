@@ -41,11 +41,25 @@ type SubBoard =
       Rect: SKRect
       IsPlayable: bool
       Tiles: Tile [,] }
+    with 
+        member this.GetTileIndex tile =
+            let index =
+                this.Tiles
+                |> Seq.cast<Tile>
+                |> Seq.findIndex (fun t -> t = tile)
+            index / 3, index % 3
 
 type Board =
     { Winner: BoardWinner option
       Size: SKSizeI
       SubBoards: SubBoard [,] }
+    with 
+        member this.GetSubBoardIndex subBoard =
+            let index =
+                this.SubBoards
+                |> Seq.cast<SubBoard>
+                |> Seq.findIndex (fun sb -> sb = subBoard)
+            index / 3, index % 3
 
 type Model =
     { CurrentPlayer: Meeple

@@ -81,4 +81,5 @@ module Messages =
                                     Winner = calculateGameWinner b model.CurrentPlayer }
                             CurrentPlayer = togglePlayer model.CurrentPlayer
                             TouchPoint = point }
+                // Don't send next command if game winner
                 model, Cmd.ofAsyncMsg <| RemotePlayer.playPosition model

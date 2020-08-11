@@ -42,19 +42,9 @@ module GameRules =
         |> Seq.forall (fun (_, meeple) -> meeple.IsSome)
 
     let private newBoard model subBoard tile =
-        let (sbi, sbj) =
-            let index =
-                model.Board.SubBoards
-                |> Seq.cast<SubBoard>
-                |> Seq.findIndex (fun sb -> sb = subBoard)
-            index / 3, index % 3
+        let (sbi, sbj) = model.Board.GetSubBoardIndex subBoard
 
-        let (ti, tj) = 
-            let index =
-                model.Board.SubBoards.[sbi, sbj].Tiles
-                |> Seq.cast<Tile>
-                |> Seq.findIndex (fun t -> t = tile)
-            index / 3, index % 3
+        let (ti, tj) = model.Board.SubBoards.[sbi, sbj].GetTileIndex tile
 
         let newTiles =
             subBoard.Tiles
@@ -91,9 +81,6 @@ module GameRules =
 
             { sb with IsPlayable = isPlayable })
 
-    // TODO: move this
-    let maybe = MaybeBuilder()
-
     let togglePlayer (current: Meeple) =
         match current with
         | Meeple.Ex -> Meeple.Oh
@@ -105,7 +92,6 @@ module GameRules =
         let tile = subBoard.Tiles.[ti, tj]
 
         newBoard model subBoard tile
-
 
     let updatedBoard model (point: SKPoint) =
         maybe {
