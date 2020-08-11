@@ -12,13 +12,14 @@ module Render =
         let meepleEx = SKColor.Parse("#00F")
         let meepleOh = SKColor.Parse("#00F")
         let gameDraw = SKColor.Parse("#00F")
+        let gameWinner = SKColor.Parse("#FF0000")
 
     let private largeStroke = 10.0f
     let private smallStroke = 5.0f
 
-    let private drawEx (canvas: SKCanvas) (rect: SKRect) =
+    let private drawEx (color: SKColor) (canvas: SKCanvas) (rect: SKRect) =
         use paint =
-            new SKPaint(Color = Colors.meepleEx, StrokeWidth = largeStroke, IsStroke = true)
+            new SKPaint(Color = color, StrokeWidth = largeStroke, IsStroke = true)
 
         let paddingHorizontal = rect.Width * 0.1f
         let paddingVertical = rect.Height * 0.1f
@@ -30,9 +31,9 @@ module Render =
         canvas.DrawLine(startX, startY, endX, endY, paint)
         canvas.DrawLine(endX, startY, startX, endY, paint)
 
-    let private drawOh (canvas: SKCanvas) (rect: SKRect) =
+    let private drawOh (color: SKColor) (canvas: SKCanvas) (rect: SKRect) =
         use paint =
-            new SKPaint(Color = Colors.meepleOh, StrokeWidth = smallStroke, IsStroke = true)
+            new SKPaint(Color = color, StrokeWidth = smallStroke, IsStroke = true)
 
         let paddingHorizontal = rect.Width * 0.1f
         let paddingVertical = rect.Height * 0.1f
@@ -65,7 +66,10 @@ module Render =
         winner
         |> Option.iter (fun w ->
             match w with
-            | Player m -> if m = Meeple.Ex then drawEx canvas rect else drawOh canvas rect
+            | Player m -> 
+                if m = Meeple.Ex 
+                then drawEx Colors.gameWinner canvas rect 
+                else drawOh Colors.gameWinner canvas rect
             | Draw -> drawGameDraw canvas rect)
 
     let drawBoard (args: SKPaintSurfaceEventArgs) (board: Board) =
@@ -91,12 +95,11 @@ module Render =
             if not sb.IsPlayable
             then canvas.DrawRect(sb.Rect, transparentPaint)
 
-
             drawWinner sb.Winner canvas sb.Rect)
 
         // draw main winner
-        let contrainedSize = if board.Size.Width > board.Size.Height then board.Size.Height else board.Size.Width
-        drawWinner board.Winner canvas (SKRect(0.0f, 0.0f, float32 contrainedSize, float32 contrainedSize))
+        let constrainedSize = if board.Size.Width > board.Size.Height then board.Size.Height else board.Size.Width
+        drawWinner board.Winner canvas (SKRect(0.0f, 0.0f, float32 constrainedSize, float32 constrainedSize))
 
     let drawMeeple (args: SKPaintSurfaceEventArgs) (board: Board) =
         use canvas = args.Surface.Canvas
@@ -108,5 +111,5 @@ module Render =
                 meeple
                 |> Option.iter (fun m ->
                     match m with
-                    | Meeple.Ex -> drawEx canvas rect
-                    | Meeple.Oh -> drawOh canvas rect)))
+                    | Meeple.Ex -> drawEx Colors.meepleEx canvas rect
+                    | Meeple.Oh -> drawOh Colors.meepleOh canvas rect)))

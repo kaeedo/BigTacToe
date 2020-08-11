@@ -36,10 +36,7 @@ module GameRules =
         else
             None
 
-    let private isDraw (tiles: Tile [,]) =
-        tiles
-        |> Seq.cast<Tile>
-        |> Seq.forall (fun (_, meeple) -> meeple.IsSome)
+    
 
     let private newBoard model subBoard tile =
         let (sbi, sbj) = model.Board.GetSubBoardIndex subBoard
@@ -58,6 +55,11 @@ module GameRules =
         let boardWonBy =
             let meeples =
                 newTiles |> Array2D.map (fun nt -> snd nt)
+
+            let isDraw (tiles: Tile [,]) =
+                tiles
+                |> Seq.cast<Tile>
+                |> Seq.forall (fun (_, meeple) -> meeple.IsSome)
 
             match calculateBoardWinner meeples model.CurrentPlayer with
             | Some winner -> Some winner
@@ -119,4 +121,19 @@ module GameRules =
                     | Player m -> Some m
                     | _ -> None))
 
-        calculateBoardWinner meeples currentPlayer
+        let isDraw (subBoards: SubBoard [,]) =
+            subBoards
+            |> Seq.cast<SubBoard>
+            |> Seq.forall (fun sb -> not sb.IsPlayable)
+
+        match calculateBoardWinner meeples currentPlayer with
+        | Some winner -> Some winner
+        | None -> if isDraw subBoard then Some Draw else None
+
+    let updateModel model subBoards =
+        { model with
+            Board =
+                { model.Board with
+                    SubBoards = subBoards
+                    Winner = calculateGameWinner subBoards model.CurrentPlayer }
+            CurrentPlayer = togglePlayer model.CurrentPlayer }

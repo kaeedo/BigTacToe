@@ -34,9 +34,8 @@ module App =
                          
                                   args.Surface.Canvas.Clear()
                          
-                                  Render.drawBoard args board
-                         
-                                  Render.drawMeeple args model.Board),
+                                  Render.drawMeeple args model.Board
+                                  Render.drawBoard args board),
                           touch =
                               (fun args ->
                                   if args.InContact

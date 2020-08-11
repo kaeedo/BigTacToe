@@ -3,6 +3,7 @@
 open SkiaSharp
 open Xamarin.Forms
 open Fabulous
+open System.Diagnostics
 
 type MaybeBuilder() =
     member this.Bind(m, f) = Option.bind f m
@@ -65,7 +66,6 @@ type Model =
     { CurrentPlayer: Meeple
       Board: Board
       Size: float * float
-      TouchPoint: SKPoint
       GridLayout: ViewRef<Grid> }
 
 type PositionPlayed = (int * int) * (int * int)
@@ -94,5 +94,4 @@ module Types =
         { Model.GridLayout = ViewRef<Grid>()
           Size = 100.0, 100.0
           CurrentPlayer = Meeple.Ex
-          TouchPoint = SKPoint(-1.0f, -1.0f)
           Board = initBoard }

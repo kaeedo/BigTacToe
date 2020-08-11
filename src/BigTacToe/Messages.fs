@@ -53,6 +53,7 @@ module Messages =
               Board.Size = size
               SubBoards = litteBoards }
 
+
     let update msg (model: Model) =
         match msg with
         | ResizeCanvas size ->
@@ -60,26 +61,21 @@ module Messages =
             { model with Board = board }, Cmd.none
         | OpponentPlayed positionPlayed ->
             let subBoards = playPosition model positionPlayed
-            let model = 
-                { model with
-                        Board =
-                            { model.Board with
-                                SubBoards = subBoards
-                                Winner = calculateGameWinner subBoards model.CurrentPlayer }
-                        CurrentPlayer = togglePlayer model.CurrentPlayer }
+            let model = updateModel model subBoards
             model, Cmd.none
         | SKSurfaceTouched point when
             model.CurrentPlayer = Meeple.Ex && model.Board.Winner.IsNone ->
-            match updatedBoard model point with
-            | None -> { model with TouchPoint = point }, Cmd.none
-            | Some b ->
-                let model = 
-                    { model with
-                            Board =
-                                { model.Board with
-                                    SubBoards = b
-                                    Winner = calculateGameWinner b model.CurrentPlayer }
-                            CurrentPlayer = togglePlayer model.CurrentPlayer
-                            TouchPoint = point }
-                // Don't send next command if game winner
-                model, Cmd.ofAsyncMsg <| RemotePlayer.playPosition model
+            updatedBoard model point
+            |> Option.fold (fun _ b ->
+                let model = updateModel model b
+
+                let command =
+                    if model.Board.Winner.IsSome 
+                    then Cmd.none
+                    else Cmd.ofAsyncMsg <| RemotePlayer.playPosition model
+
+                (model, command)
+            ) (model, Cmd.none)
+        | _ -> (model, Cmd.none)
+            
+                
