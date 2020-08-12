@@ -6,7 +6,7 @@ open Fabulous
 open Fabulous.XamarinForms
 open Xamarin.Forms
 
-module App =
+module private App =
     let init  () = Types.initModel, Cmd.none
 
     let view (model: Model) dispatch =

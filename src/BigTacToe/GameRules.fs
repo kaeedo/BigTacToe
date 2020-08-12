@@ -42,7 +42,6 @@ module GameRules =
 
         let (ti, tj) = model.Board.SubBoards.[sbi, sbj].Tiles |> Array2D.findIndex tile
 
-        let sw = Stopwatch.StartNew()
         let newTiles =
             subBoard.Tiles
             //|> Array2D.replaceWith tile (fun t ->
@@ -56,7 +55,6 @@ module GameRules =
                     (rect, Some model.CurrentPlayer)
                 else
                     t)
-        let a = sw.ElapsedMilliseconds
 
         let boardWonBy =
             let meeples =
@@ -70,7 +68,6 @@ module GameRules =
             match calculateBoardWinner meeples model.CurrentPlayer with
             | Some winner -> Some winner
             | None -> if isDraw newTiles then Some Draw else None
-        sw.Restart()
         let newBoard =
             model.Board.SubBoards
             //|> Array2D.replaceWith subBoard (fun sb ->
@@ -86,16 +83,6 @@ module GameRules =
                           Winner = boardWonBy }
                 else
                     sb)
-        let b = sw.ElapsedMilliseconds
-
-        printfn "##############################"
-        printfn "##############################"
-        printfn "##############################"
-        printfn "Time a: %A Time b: %A" a b
-        printfn "##############################"
-        printfn "##############################"
-        printfn "##############################"
-
 
         let freeMove = newBoard.[ti, tj].Winner.IsSome
 

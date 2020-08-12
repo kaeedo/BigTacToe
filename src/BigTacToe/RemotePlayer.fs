@@ -1,7 +1,5 @@
 ﻿namespace BigTacToe
 
-open System.Diagnostics
-
 module RemotePlayer =
     let private playOutGame model =
         let rec playOut (model: Model) =
@@ -36,7 +34,7 @@ module RemotePlayer =
                 model.Board.SubBoards
                 |> Seq.cast<SubBoard>
                 |> Seq.filter (fun sb -> sb.IsPlayable)
-
+                
             let! possiblePlays =
                 playableSubBoards
                 |> Seq.map (fun psb ->
@@ -51,47 +49,20 @@ module RemotePlayer =
                 |> Seq.map (fun pp ->
                     async {
                         let (subBoard, tile) = pp
-                        let (sbi, sbj) = 
-                            //model.Board.GetSubBoardIndex subBoard
-                            model.Board.SubBoards |> Array2D.findIndex subBoard
+                        let (sbi, sbj) = model.Board.SubBoards |> Array2D.findIndex subBoard
                     
-                        let (ti, tj) = 
-                            //model.Board.SubBoards.[sbi, sbj].GetTileIndex tile
-                            model.Board.SubBoards.[sbi, sbj].Tiles |> Array2D.findIndex tile
+                        let (ti, tj) = model.Board.SubBoards.[sbi, sbj].Tiles |> Array2D.findIndex tile
 
                         let subBoards = GameRules.playPosition model ((sbi, sbj), (ti, tj))
-
-                        let mutable total = 0L
                         let! bestPlay =
-                            [0..100]
-                            |> Seq.map (fun _ ->
-                                async {
-                                    let sw = Stopwatch.StartNew()
-                                    //printfn "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-"
-                                    let a = playOutGame <| GameRules.updateModel model subBoards
-                                    sw.Stop()
-
-                                    total <- total + sw.ElapsedMilliseconds
-                                    //printfn "Time taken: %A" sw.ElapsedMilliseconds
-                                    //printfn "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-"
-                                    return a
-                                }
-                            )
+                            seq {
+                                for _ in 0..100 do
+                                    async {
+                                        return playOutGame <| GameRules.updateModel model subBoards
+                                    }
+                            }
                             |> Async.Parallel
-
-                        printfn "+**++*+*+*+*+**+*+*+*+*+*+**+*+*+*+*+*+*+*+*+**+*+*+*+*+*"
-                        printfn "+**++*+*+*+*+**+*+*+*+*+*+**+*+*+*+*+*+*+*+*+**+*+*+*+*+*"
-                        printfn "+**++*+*+*+*+**+*+*+*+*+*+**+*+*+*+*+*+*+*+*+**+*+*+*+*+*"
-                        printfn "+**++*+*+*+*+**+*+*+*+*+*+**+*+*+*+*+*+*+*+*+**+*+*+*+*+*"
-                        printfn "Total time taken: %A" total
-                        printfn "+**++*+*+*+*+**+*+*+*+*+*+**+*+*+*+*+*+*+*+*+**+*+*+*+*+*"
-                        printfn "+**++*+*+*+*+**+*+*+*+*+*+**+*+*+*+*+*+*+*+*+**+*+*+*+*+*"
-                        printfn "+**++*+*+*+*+**+*+*+*+*+*+**+*+*+*+*+*+*+*+*+**+*+*+*+*+*"
-                        printfn "+**++*+*+*+*+**+*+*+*+*+*+**+*+*+*+*+*+*+*+*+**+*+*+*+*+*"
-                        printfn "+**++*+*+*+*+**+*+*+*+*+*+**+*+*+*+*+*+*+*+*+**+*+*+*+*+*"
-
-
-
+                            
                         let bestPlay =
                             bestPlay
                             |> Seq.countBy id
@@ -130,7 +101,6 @@ module RemotePlayer =
                     subBoard, tile
                 
             let (sbi, sbj) = model.Board.SubBoards |> Array2D.findIndex subBoard
-                //model.Board.GetSubBoardIndex subBoard
 
             let (ti, tj) = model.Board.SubBoards.[sbi, sbj].Tiles |> Array2D.findIndex tile
 
