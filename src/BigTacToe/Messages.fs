@@ -18,7 +18,7 @@ module Messages =
 
         (left, top, right, bottom)
 
-    let private calculateSubTiles (parentRect: Rect) tiles =
+    let private calculateSubTiles (parentRect: Rect) (tiles: Tile [,]) =
         let (left, top, right, bottom) = parentRect
         let skRect = SKRect(left, top, right, bottom)
         let subSize =
@@ -35,7 +35,8 @@ module Messages =
                 skRect.Top + float32 (subSize.Height * j)
 
             let bottom = top + float32 subSize.Height
-            Rect(left, top, right, bottom), meeple)
+            ((left, top, right, bottom), meeple)
+        )
 
     let private setBigSize board (size: int * int) =
         let (width, height) = size
@@ -47,11 +48,12 @@ module Messages =
             |> Array2D.mapi (fun i j subBoard ->
                 let (left, top, right, bottom) =
                     calculateSubBoardRect (float32 i) (float32 j) subSize
-
+                let r: Rect = (left, top, right, bottom)
+                let a = calculateSubTiles r subBoard.Tiles 
                 //let rect = SKRect
                 { subBoard with
-                      Rect = (left, top, right, bottom)
-                      Tiles = calculateSubTiles (left, top, right, bottom) subBoard.Tiles })
+                      Rect = r
+                      Tiles = a})
 
         { board with
               Board.Size = size

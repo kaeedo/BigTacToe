@@ -3,6 +3,7 @@
 open SkiaSharp
 open Xamarin.Forms
 open Fabulous
+open System
 
 type MaybeBuilder() =
     member this.Bind(m, f) = Option.bind f m

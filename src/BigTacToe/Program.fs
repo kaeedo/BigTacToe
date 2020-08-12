@@ -70,7 +70,7 @@ type App() as app =
     let runner =
         App.program
 #if DEBUG
-        |> Program.withConsoleTrace
+        //|> Program.withConsoleTrace
 #endif
         |> XamarinFormsProgram.run app
 

@@ -6,7 +6,7 @@ using Xamarin.Forms.Platform.Android;
 
 namespace BigTacToe
 {
-    [Activity(Label = "BigTacToe.Android", Icon = "@mipmap/ic_launcher", Theme = "@style/MainTheme", MainLauncher = true, ConfigurationChanges = (ConfigChanges.ScreenSize | ConfigChanges.Orientation))]
+    [Activity(Label = "Big Tac Toe", Icon = "@mipmap/ic_launcher", Theme = "@style/MainTheme", MainLauncher = true, ConfigurationChanges = (ConfigChanges.ScreenSize | ConfigChanges.Orientation))]
     public class MainActivity : FormsAppCompatActivity
     {
         protected override void OnCreate(Bundle bundle)
@@ -19,7 +19,7 @@ namespace BigTacToe
 
             Xamarin.Forms.Forms.Init(this, bundle);
 
-            var appcore = new BigTacToe.App();
+            var appcore = new App();
             this.LoadApplication(appcore);
         }
         public override void OnRequestPermissionsResult(int requestCode, string[] permissions, [GeneratedEnum] Android.Content.PM.Permission[] grantResults)

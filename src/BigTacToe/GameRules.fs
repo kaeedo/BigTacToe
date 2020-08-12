@@ -1,6 +1,7 @@
 ﻿namespace BigTacToe
 
 open SkiaSharp
+open System.Diagnostics
 
 module GameRules =
     let private calculateBoardWinner (tiles: Meeple option [,]) currentPlayer =
@@ -36,25 +37,30 @@ module GameRules =
         else
             None
 
-    
-
     let private newBoard model subBoard tile =
-        let (sbi, sbj) = model.Board.GetSubBoardIndex subBoard
+        let (sbi, sbj) = model.Board.SubBoards |> Array2D.findIndex subBoard
 
-        let (ti, tj) = model.Board.SubBoards.[sbi, sbj].GetTileIndex tile
+        let (ti, tj) = model.Board.SubBoards.[sbi, sbj].Tiles |> Array2D.findIndex tile
 
+        let sw = Stopwatch.StartNew()
         let newTiles =
             subBoard.Tiles
+            //|> Array2D.replaceWith tile (fun t ->
+            //    let (rect, _) = t
+            //    rect, Some model.CurrentPlayer
+            //)
+            // TODO optimize
             |> Array2D.map (fun t ->
                 if t = tile then
                     let (rect, _) = t
-                    rect, Some model.CurrentPlayer
+                    (rect, Some model.CurrentPlayer)
                 else
                     t)
+        let a = sw.ElapsedMilliseconds
 
         let boardWonBy =
             let meeples =
-                newTiles |> Array2D.map (fun nt -> snd nt)
+                newTiles |> Array2D.map (fun (_, nt) -> nt)
 
             let isDraw (tiles: Tile [,]) =
                 tiles
@@ -64,9 +70,15 @@ module GameRules =
             match calculateBoardWinner meeples model.CurrentPlayer with
             | Some winner -> Some winner
             | None -> if isDraw newTiles then Some Draw else None
-
+        sw.Restart()
         let newBoard =
             model.Board.SubBoards
+            //|> Array2D.replaceWith subBoard (fun sb ->
+            //    { sb with
+            //        Tiles = newTiles
+            //        Winner = boardWonBy }
+            //)
+            // TODO Optimize
             |> Array2D.map (fun sb ->
                 if sb = subBoard then
                     { subBoard with
@@ -74,6 +86,16 @@ module GameRules =
                           Winner = boardWonBy }
                 else
                     sb)
+        let b = sw.ElapsedMilliseconds
+
+        printfn "##############################"
+        printfn "##############################"
+        printfn "##############################"
+        printfn "Time a: %A Time b: %A" a b
+        printfn "##############################"
+        printfn "##############################"
+        printfn "##############################"
+
 
         let freeMove = newBoard.[ti, tj].Winner.IsSome
 
