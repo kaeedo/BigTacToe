@@ -1,4 +1,6 @@
-﻿namespace BigTacToe
+﻿namespace BigTacToe.GamePage
+
+open BigTacToe
 
 module RemotePlayer =
     let private playOutGame model =
@@ -56,7 +58,7 @@ module RemotePlayer =
                         let subBoards = GameRules.playPosition model ((sbi, sbj), (ti, tj))
                         let! bestPlay =
                             seq {
-                                for _ in 0..100 do
+                                for _ in 0..50 do
                                     async {
                                         return playOutGame <| GameRules.updateModel model subBoards
                                     }

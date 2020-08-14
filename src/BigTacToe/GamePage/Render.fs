@@ -1,4 +1,4 @@
-﻿namespace BigTacToe
+﻿namespace BigTacToe.GamePage
 
 open SkiaSharp
 open SkiaSharp.Views.Forms

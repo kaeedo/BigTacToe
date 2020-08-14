@@ -7,62 +7,94 @@ open Fabulous.XamarinForms
 open Xamarin.Forms
 
 module private App =
-    let init  () = Types.initModel, Cmd.none
+    type Model =
+        { MainMenuPageModel : MainMenuPage.Model
+          GamePageModel: GamePage.Model option }
+
+    type Pages =
+        { MainMenuPage: ViewElement
+          GamePage: ViewElement option }
+
+    type Msg =
+        | MainMenuPageMsg of MainMenuPage.Messages
+        | GamePageMsg of GamePage.Msg
+
+        | GoToGame
+        | GoToMainMenu
+        | NavigationPopped
+
+    let handleMainExternalMsg externalMsg =
+        match externalMsg with
+        | MainMenuPage.ExternalMessages.NoOp ->
+            Cmd.none
+        | MainMenuPage.ExternalMessages.NavigateToGame ->
+            Cmd.ofMsg GoToGame
+
+    let init  () = 
+        let mainMenuPageModel, mainPageMessage = MainMenuPage.MainMenuView.init ()
+        //let gamePageModel, gamePageMsg = GamePage.Types.initModel (), Cmd.none
+
+        let pages =
+            { Model.MainMenuPageModel = mainMenuPageModel
+              GamePageModel = None }
+
+        pages, (Cmd.map MainMenuPageMsg mainPageMessage)
+
+
+    let navigationMapper (model: Model) =
+        let gameModel = model.GamePageModel
+        match gameModel with
+        | None ->
+            model
+        | Some _ ->
+            { model with GamePageModel = None }
+
+    let update msg model = 
+        match msg with 
+        | MainMenuPageMsg msg ->
+            let m, cmd, externalMsg = MainMenuPage.MainMenuView.update msg model.MainMenuPageModel
+            let cmd2 = handleMainExternalMsg externalMsg
+            { model with MainMenuPageModel = m }, Cmd.batch [(Cmd.map MainMenuPageMsg cmd); cmd2 ]
+        | GamePageMsg msg ->
+            let m, cmd = GamePage.Messages.update msg model.GamePageModel.Value
+
+            { model with GamePageModel = Some m }, (Cmd.map GamePageMsg cmd)
+
+        | NavigationPopped ->
+            navigationMapper model, Cmd.none
+        | GoToGame ->
+            let m, cmd = GamePage.Types.initModel (), Cmd.none
+            { model with GamePageModel = Some m }, (Cmd.map GamePageMsg cmd)
+
+    let getPages (allPages: Pages) =
+        let mainMenuPage = allPages.MainMenuPage
+        let gamePage = allPages.GamePage
+        
+        match gamePage with
+        | None -> [ mainMenuPage ]
+        | Some gp -> [ mainMenuPage; gp ]
+
 
     let view (model: Model) dispatch =
-        let gameStatus =
-            match model.Board.Winner with
-            | None -> View.Label(text = sprintf "It is %s turn to play" (model.CurrentPlayer.ToString()), fontSize = FontSize 24.0, horizontalTextAlignment = TextAlignment.Center)
-            | Some w ->
-                match w with
-                | Draw -> View.Label(text = "It's a tie game. Nobody wins", fontSize = FontSize 24.0, horizontalTextAlignment = TextAlignment.Center)
-                | Player p -> View.Label(text = sprintf "%s wins!" (p.ToString()), fontSize = FontSize 24.0, horizontalTextAlignment = TextAlignment.Center)
+        let mainMenuPage = MainMenuPage.MainMenuView.view model.MainMenuPageModel (MainMenuPageMsg >> dispatch)
+        let gamePage = 
+            model.GamePageModel
+            |> Option.map (fun gpm ->
+                GamePage.GameView.view gpm (GamePageMsg >> dispatch)
+            )
+        
+        let allPages = 
+            { Pages.MainMenuPage = mainMenuPage
+              GamePage = gamePage }
 
-        let gameBoard =
-            View.StackLayout
-                (children = [
-                 dependsOn (model.Size, model.Board) (fun _ (size, board) ->
-                     View.SKCanvasView
-                         (invalidate = true,
-                          enableTouchEvents = true,
-                          verticalOptions = LayoutOptions.FillAndExpand,
-                          horizontalOptions = LayoutOptions.FillAndExpand,
-                          paintSurface =
-                              (fun args ->
-                                  dispatch <| ResizeCanvas args.Info.Size
-                         
-                                  args.Surface.Canvas.Clear()
-                         
-                                  Render.drawMeeple args model.Board
-                                  Render.drawBoard args board),
-                          touch =
-                              (fun args ->
-                                  if args.InContact
-                                  then dispatch (SKSurfaceTouched args.Location))))
-                ])
-
-        let page =
-            View.ContentPage
-                (content =
-                    View.Grid
-                        (rowdefs = [Absolute 50.0; Star; Absolute 50.0],
-                         coldefs = [Star],
-                         padding = Thickness 20.0,
-                         ref = ViewRef<Grid>(), //model.GridLayout,
-                         children = [
-                            gameStatus
-                            gameBoard.Row(1)
-                            View.Button(
-                                text = "Start new Game",
-                                command = (fun () -> dispatch DisplayNewGameAlert) 
-                            ).Row(2).BackgroundColor(Color.Green)
-                         ]))
-
-        page
+        View.NavigationPage(
+            hasNavigationBar = false,
+            pages = getPages allPages
+        )
 
     // Note, this declaration is needed if you enable LiveUpdate
     let program =
-        Program.mkProgram init Messages.update view
+        Program.mkProgram init update view
 
 type App() as app =
     inherit Application()
@@ -84,6 +116,7 @@ type App() as app =
 
 // Uncomment this code to save the application state to app.Properties using Newtonsoft.Json
 // See https://fsprojects.github.io/Fabulous/Fabulous.XamarinForms/models.html#saving-application-state for further  instructions.
+(*
     let modelId = "model"
 
     override __.OnSleep() =
@@ -115,3 +148,4 @@ type App() as app =
     override this.OnStart() =
         Console.WriteLine "OnStart: using same logic as OnResume()"
         this.OnResume()
+        *)

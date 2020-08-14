@@ -3,15 +3,18 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
+      <LangVersion>4.7</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="Types.fs" />
     <Compile Include="Utilities.fs" />
-    <Compile Include="GameRules.fs" />
-    <Compile Include="RemotePlayer.fs" />
-    <Compile Include="Messages.fs" />
-    <Compile Include="Render.fs" />
+    <Compile Include="GamePage\Types.fs" />
+    <Compile Include="GamePage\GameRules.fs" />
+    <Compile Include="GamePage\RemotePlayer.fs" />
+    <Compile Include="GamePage\Messages.fs" />
+    <Compile Include="GamePage\Render.fs" />
+    <Compile Include="GamePage\GameView.fs" />
+    <Compile Include="MainMenuPage\MainMenuView.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>

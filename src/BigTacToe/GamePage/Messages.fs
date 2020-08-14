@@ -1,4 +1,4 @@
-﻿namespace BigTacToe
+﻿namespace BigTacToe.GamePage
 
 open Fabulous
 open GameRules
@@ -72,7 +72,7 @@ module Messages =
             model, Cmd.ofAsyncMsg alertResult
         | NewGameAlertResult shouldStartNew ->
             if shouldStartNew
-            then Types.initModel, Cmd.none
+            then Types.initModel (), Cmd.none
             else model, Cmd.none
         | ResizeCanvas size ->
             let board = setBigSize model.Board (size.Width, size.Height)

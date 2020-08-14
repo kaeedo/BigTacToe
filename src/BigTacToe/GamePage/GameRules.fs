@@ -1,7 +1,7 @@
-﻿namespace BigTacToe
+﻿namespace BigTacToe.GamePage
 
 open SkiaSharp
-open System.Diagnostics
+open BigTacToe
 
 module GameRules =
     let private calculateBoardWinner (tiles: Meeple option [,]) currentPlayer =
@@ -44,11 +44,6 @@ module GameRules =
 
         let newTiles =
             subBoard.Tiles
-            //|> Array2D.replaceWith tile (fun t ->
-            //    let (rect, _) = t
-            //    rect, Some model.CurrentPlayer
-            //)
-            // TODO optimize
             |> Array2D.map (fun t ->
                 if t = tile then
                     let (rect, _) = t
@@ -70,12 +65,6 @@ module GameRules =
             | None -> if isDraw newTiles then Some Draw else None
         let newBoard =
             model.Board.SubBoards
-            //|> Array2D.replaceWith subBoard (fun sb ->
-            //    { sb with
-            //        Tiles = newTiles
-            //        Winner = boardWonBy }
-            //)
-            // TODO Optimize
             |> Array2D.map (fun sb ->
                 if sb = subBoard then
                     { subBoard with
