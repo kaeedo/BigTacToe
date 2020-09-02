@@ -1,12 +1,11 @@
-﻿namespace BigTacToe.GamePage
+﻿namespace BigTacToe.Pages
 
 open Fabulous
 open GameRules
 open SkiaSharp
 open Xamarin.Forms
 
-[<RequireQualifiedAccess>]
-module Messages =
+module internal Messages =
     let private calculateSubBoardRect i j (size: SKSizeI) =
         let width = float32 size.Width
         let height = float32 size.Height
@@ -60,7 +59,7 @@ module Messages =
               SubBoards = litteBoards }
 
 
-    let update msg (model: Model) =
+    let update msg (model: GameModel) =
         match msg with
         | DisplayNewGameAlert ->
             let alertResult =
@@ -72,7 +71,7 @@ module Messages =
             model, Cmd.ofAsyncMsg alertResult
         | NewGameAlertResult shouldStartNew ->
             if shouldStartNew
-            then Types.initModel (), Cmd.none
+            then GameModel.init (), Cmd.none
             else model, Cmd.none
         | ResizeCanvas size ->
             let board = setBigSize model.Board (size.Width, size.Height)

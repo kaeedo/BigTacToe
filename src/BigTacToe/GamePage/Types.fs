@@ -1,4 +1,4 @@
-﻿namespace BigTacToe.GamePage
+﻿namespace BigTacToe.Pages
 
 open SkiaSharp
 
@@ -43,36 +43,39 @@ type Board =
                 |> Seq.findIndex (fun sb -> sb = subBoard)
             index / 3, index % 3
 
-type Model =
+type GameModel =
     { CurrentPlayer: Meeple
       Board: Board
       Size: float * float }
+    with
+        static member init () =
+            let initBoard =
+                let subBoard =
+                    { SubBoard.Winner = None
+                      Rect = 0.0f, 0.0f, 0.0f, 0.0f
+                      IsPlayable = true
+                      Tiles = Array2D.init 3 3 (fun _ _ -> (0.0f, 0.0f, 0.0f, 0.0f), None) }
+
+                let bigBoard =
+                    { Board.Winner = None
+                      Size = (0, 0)
+                      SubBoards = Array2D.init 3 3 (fun _ _ -> subBoard) }
+
+                bigBoard
+
+            { GameModel.Size = 100.0, 100.0 //GridLayout = ViewRef<Grid>()
+              CurrentPlayer = Meeple.Ex
+              Board = initBoard }
 
 type PositionPlayed = (int * int) * (int * int)
 
-type Msg =
+type GameMsg =
     | DisplayNewGameAlert
     | NewGameAlertResult of bool
     | ResizeCanvas of SKSizeI
     | SKSurfaceTouched of SKPoint
     | OpponentPlayed of PositionPlayed
 
-module Types =
-    let private initBoard =
-        let subBoard =
-            { SubBoard.Winner = None
-              Rect = 0.0f, 0.0f, 0.0f, 0.0f
-              IsPlayable = true
-              Tiles = Array2D.init 3 3 (fun _ _ -> (0.0f, 0.0f, 0.0f, 0.0f), None) }
-
-        let bigBoard =
-            { Board.Winner = None
-              Size = (0, 0)
-              SubBoards = Array2D.init 3 3 (fun _ _ -> subBoard) }
-
-        bigBoard
-
-    let initModel () =
-        { Model.Size = 100.0, 100.0 //GridLayout = ViewRef<Grid>()
-          CurrentPlayer = Meeple.Ex
-          Board = initBoard }
+type GameExternalMsg =
+    | NoOp
+    | NavigateToMainMenu

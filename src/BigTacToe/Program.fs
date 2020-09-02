@@ -1,6 +1,6 @@
 ﻿namespace BigTacToe
 
-open System
+open BigTacToe.Pages
 
 open Fabulous
 open Fabulous.XamarinForms
@@ -8,16 +8,16 @@ open Xamarin.Forms
 
 module private App =
     type Model =
-        { MainMenuPageModel : MainMenuPage.Model
-          GamePageModel: GamePage.Model option }
+        { MainMenuPageModel : MainMenuModel
+          GamePageModel: GameModel option }
 
     type Pages =
         { MainMenuPage: ViewElement
           GamePage: ViewElement option }
 
     type Msg =
-        | MainMenuPageMsg of MainMenuPage.Messages
-        | GamePageMsg of GamePage.Msg
+        | MainMenuPageMsg of MainMenuMsg
+        | GamePageMsg of GameMsg
 
         | GoToGame
         | GoToMainMenu
@@ -25,13 +25,20 @@ module private App =
 
     let handleMainExternalMsg externalMsg =
         match externalMsg with
-        | MainMenuPage.ExternalMessages.NoOp ->
+        | MainMenuExternalMsg.NoOp ->
             Cmd.none
-        | MainMenuPage.ExternalMessages.NavigateToGame ->
+        | MainMenuExternalMsg.NavigateToGame ->
             Cmd.ofMsg GoToGame
 
+    let handleGameExternalMsg externalMsg =
+        match externalMsg with
+        | GameExternalMsg.NoOp ->
+            Cmd.none
+        | GameExternalMsg.NavigateToMainMenu ->
+            Cmd.ofMsg GoToMainMenu
+
     let init  () = 
-        let mainMenuPageModel, mainPageMessage = MainMenuPage.MainMenuView.init ()
+        let mainMenuPageModel, mainPageMessage = MainMenu.init ()
         //let gamePageModel, gamePageMsg = GamePage.Types.initModel (), Cmd.none
 
         let pages =
@@ -52,18 +59,17 @@ module private App =
     let update msg model = 
         match msg with 
         | MainMenuPageMsg msg ->
-            let m, cmd, externalMsg = MainMenuPage.MainMenuView.update msg model.MainMenuPageModel
+            let m, cmd, externalMsg = MainMenu.update msg model.MainMenuPageModel
             let cmd2 = handleMainExternalMsg externalMsg
             { model with MainMenuPageModel = m }, Cmd.batch [(Cmd.map MainMenuPageMsg cmd); cmd2 ]
         | GamePageMsg msg ->
-            let m, cmd = GamePage.Messages.update msg model.GamePageModel.Value
-
+            let m, cmd = Messages.update msg model.GamePageModel.Value
             { model with GamePageModel = Some m }, (Cmd.map GamePageMsg cmd)
 
         | NavigationPopped ->
             navigationMapper model, Cmd.none
         | GoToGame ->
-            let m, cmd = GamePage.Types.initModel (), Cmd.none
+            let m, cmd = GameModel.init (), Cmd.none
             { model with GamePageModel = Some m }, (Cmd.map GamePageMsg cmd)
 
     let getPages (allPages: Pages) =
@@ -76,11 +82,11 @@ module private App =
 
 
     let view (model: Model) dispatch =
-        let mainMenuPage = MainMenuPage.MainMenuView.view model.MainMenuPageModel (MainMenuPageMsg >> dispatch)
+        let mainMenuPage = MainMenu.view model.MainMenuPageModel (MainMenuPageMsg >> dispatch)
         let gamePage = 
             model.GamePageModel
             |> Option.map (fun gpm ->
-                GamePage.GameView.view gpm (GamePageMsg >> dispatch)
+                Game.view gpm (GamePageMsg >> dispatch)
             )
         
         let allPages = 

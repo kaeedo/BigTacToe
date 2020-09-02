@@ -1,4 +1,4 @@
-﻿namespace BigTacToe.GamePage
+﻿namespace BigTacToe.Pages
 
 open SkiaSharp
 open BigTacToe
@@ -86,7 +86,7 @@ module GameRules =
         | Meeple.Ex -> Meeple.Oh
         | Meeple.Oh -> Meeple.Ex
 
-    let playPosition (model: Model) (positionPlayed: PositionPlayed) =
+    let playPosition (model: GameModel) (positionPlayed: PositionPlayed) =
         let (sbi, sbj), (ti, tj) = positionPlayed
         let subBoard = model.Board.SubBoards.[sbi, sbj]
         let tile = subBoard.Tiles.[ti, tj]

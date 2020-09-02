@@ -1,10 +1,10 @@
-﻿namespace BigTacToe.GamePage
+﻿namespace BigTacToe.Pages
 
 open SkiaSharp
 open SkiaSharp.Views.Forms
 
 [<RequireQualifiedAccess>]
-module Render =
+module internal Render =
     module private Colors =
         let largeGridDivider = SKColor.Parse("#00F")
         let gray = SKColor.Parse("#222f")

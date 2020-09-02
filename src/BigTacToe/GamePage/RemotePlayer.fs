@@ -1,10 +1,10 @@
-﻿namespace BigTacToe.GamePage
+﻿namespace BigTacToe.Pages
 
 open BigTacToe
 
 module RemotePlayer =
     let private playOutGame model =
-        let rec playOut (model: Model) =
+        let rec playOut (model: GameModel) =
             match model.Board.Winner with
             | Some winner -> winner
             | None ->
@@ -30,15 +30,12 @@ module RemotePlayer =
 
         playOut model
 
-    let playPosition (model: Model) = 
+    let playPosition (model: GameModel) = 
         async {
-            let playableSubBoards =
+            let! possiblePlays =
                 model.Board.SubBoards
                 |> Seq.cast<SubBoard>
                 |> Seq.filter (fun sb -> sb.IsPlayable)
-                
-            let! possiblePlays =
-                playableSubBoards
                 |> Seq.map (fun psb ->
                     psb.Tiles
                     |> Seq.cast<Tile>

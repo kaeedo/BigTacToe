@@ -1,30 +1,30 @@
-﻿namespace BigTacToe.MainMenuPage
+﻿namespace BigTacToe.Pages
 
 open Fabulous.XamarinForms
 open Xamarin.Forms
 open Fabulous
 
-type Model =
+type MainMenuModel =
     { Count: int }
 
-type Messages =
+type MainMenuMsg =
 | Increment
 | Decrement
 | NavigateToGame
 
-type ExternalMessages =
+type MainMenuExternalMsg =
 | NoOp
 | NavigateToGame
 
 [<RequireQualifiedAccess>]
-module internal MainMenuView =
-    let init () = { Model.Count = 0 }, Cmd.none
+module internal MainMenu =
+    let init () = { MainMenuModel.Count = 0 }, Cmd.none
 
     let update message model =
         match message with
-        | Increment -> { model with Count = model.Count + 1}, Cmd.none, ExternalMessages.NoOp
-        | Decrement -> { model with Count = model.Count - 1}, Cmd.none, ExternalMessages.NoOp
-        | Messages.NavigateToGame -> model, Cmd.none, ExternalMessages.NavigateToGame
+        | Increment -> { model with Count = model.Count + 1}, Cmd.none, MainMenuExternalMsg.NoOp
+        | Decrement -> { model with Count = model.Count - 1}, Cmd.none, MainMenuExternalMsg.NoOp
+        | MainMenuMsg.NavigateToGame -> model, Cmd.none, MainMenuExternalMsg.NavigateToGame
 
     let view model dispatch =
         View.ContentPage
@@ -46,7 +46,7 @@ module internal MainMenuView =
                         View.Label(text = model.Count.ToString()).Row(1)
                         View.Button(
                             text = "Game",
-                            command = (fun () -> dispatch Messages.NavigateToGame)
+                            command = (fun () -> dispatch MainMenuMsg.NavigateToGame)
                         ).Row(2).ColumnSpan(2)
                      ]))
 
