@@ -2,6 +2,7 @@
 
 open Fabulous.XamarinForms
 open Xamarin.Forms
+
 open Fabulous
 
 type MainMenuModel =
@@ -22,8 +23,8 @@ module internal MainMenu =
 
     let update message model =
         match message with
-        | Increment -> { model with Count = model.Count + 1}, Cmd.none, MainMenuExternalMsg.NoOp
-        | Decrement -> { model with Count = model.Count - 1}, Cmd.none, MainMenuExternalMsg.NoOp
+        | Increment -> { model with Count = model.Count + 1 }, Cmd.none, MainMenuExternalMsg.NoOp
+        | Decrement -> { model with Count = model.Count - 1 }, Cmd.none, MainMenuExternalMsg.NoOp
         | MainMenuMsg.NavigateToGame -> model, Cmd.none, MainMenuExternalMsg.NavigateToGame
 
     let view model dispatch =
@@ -31,22 +32,23 @@ module internal MainMenu =
             (content =
                 View.Grid
                     (rowdefs = [Absolute 50.0; Star; Absolute 50.0],
-                     coldefs = [Star; Star],
+                     coldefs = [Star],
                      padding = Thickness 20.0,
-                     ref = ViewRef<Grid>(), //model.GridLayout,
+                     //ref = ViewRef<Stack>(), //model.GridLayout,
                      children = [
+                        View.Label(
+                            text = "Big Tac Toe", 
+                            fontSize = FontSize 36.0, 
+                            horizontalTextAlignment = TextAlignment.Center
+                        )
+                        View.Image(
+                            source = Path "placeholder.png",
+                            aspect = Aspect.AspectFit
+                        ).Row(1)
                         View.Button(
-                            text = "+",
-                            command = (fun () -> dispatch Increment) 
-                        ).Row(0).BackgroundColor(Color.Green)
-                        View.Button(
-                            text = "-",
-                            command = (fun () -> dispatch Decrement) 
-                        ).Row(0).Column(1).BackgroundColor(Color.Red)
-                        View.Label(text = model.Count.ToString()).Row(1)
-                        View.Button(
-                            text = "Game",
-                            command = (fun () -> dispatch MainMenuMsg.NavigateToGame)
-                        ).Row(2).ColumnSpan(2)
+                            text = "Play vs. CPU",
+                            command = (fun () -> dispatch MainMenuMsg.NavigateToGame),
+                            cornerRadius = 10
+                        ).Row(2)
                      ]))
 

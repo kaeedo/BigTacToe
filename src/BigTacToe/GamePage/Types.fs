@@ -70,8 +70,8 @@ type GameModel =
 type PositionPlayed = (int * int) * (int * int)
 
 type GameMsg =
-    | DisplayNewGameAlert
-    | NewGameAlertResult of bool
+    //| DisplayNewGameAlert
+    //| NewGameAlertResult of bool
     | ResizeCanvas of SKSizeI
     | SKSurfaceTouched of SKPoint
     | OpponentPlayed of PositionPlayed

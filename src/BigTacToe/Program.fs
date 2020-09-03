@@ -95,6 +95,7 @@ module private App =
 
         View.NavigationPage(
             hasNavigationBar = false,
+            popped = (fun _ -> dispatch NavigationPopped),
             pages = getPages allPages
         )
 

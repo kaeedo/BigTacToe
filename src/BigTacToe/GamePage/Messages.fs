@@ -61,18 +61,18 @@ module internal Messages =
 
     let update msg (model: GameModel) =
         match msg with
-        | DisplayNewGameAlert ->
-            let alertResult =
-                async {
-                    let! confirmation = Application.Current.MainPage.DisplayAlert("New Game", "Are you sure you want to start a new game?", "Yes", "No") |> Async.AwaitTask
-                    return NewGameAlertResult confirmation
-                }
+        //| DisplayNewGameAlert ->
+        //    let alertResult =
+        //        async {
+        //            let! confirmation = Application.Current.MainPage.DisplayAlert("New Game", "Are you sure you want to start a new game?", "Yes", "No") |> Async.AwaitTask
+        //            return NewGameAlertResult confirmation
+        //        }
 
-            model, Cmd.ofAsyncMsg alertResult
-        | NewGameAlertResult shouldStartNew ->
-            if shouldStartNew
-            then GameModel.init (), Cmd.none
-            else model, Cmd.none
+        //    model, Cmd.ofAsyncMsg alertResult
+        //| NewGameAlertResult shouldStartNew ->
+        //    if shouldStartNew
+        //    then GameModel.init (), Cmd.none
+        //    else model, Cmd.none
         | ResizeCanvas size ->
             let board = setBigSize model.Board (size.Width, size.Height)
             { model with Board = board }, Cmd.none

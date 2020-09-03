@@ -34,8 +34,8 @@ module internal Game =
                          
                                     args.Surface.Canvas.Clear()
                          
-                                    Render.drawMeeple args board
-                                    Render.drawBoard args board),
+                                    Render.drawBoard args board
+                                    Render.drawMeeple args board),
                             touch =
                                 (fun args ->
                                     if args.InContact
@@ -53,10 +53,7 @@ module internal Game =
                             children = [
                             View.Label(text = gameStatus, fontSize = FontSize 24.0, horizontalTextAlignment = TextAlignment.Center)
                             gameBoard.Row(1)
-                            View.Button(
-                                text = "Start new Game",
-                                command = (fun () -> dispatch DisplayNewGameAlert) 
-                            ).Row(2).BackgroundColor(Color.Green)
+                            View.Label(text = "AI thinking", horizontalTextAlignment = TextAlignment.Center).Row(2)
                             ]))
 
         page
