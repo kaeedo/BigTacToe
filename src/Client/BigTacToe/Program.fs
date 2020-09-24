@@ -37,7 +37,7 @@ module private App =
         | GameExternalMsg.NavigateToMainMenu ->
             Cmd.ofMsg GoToMainMenu
 
-    let init  () = 
+    let init () = 
         let mainMenuPageModel, mainPageMessage = MainMenu.init ()
         //let gamePageModel, gamePageMsg = GamePage.Types.initModel (), Cmd.none
 
