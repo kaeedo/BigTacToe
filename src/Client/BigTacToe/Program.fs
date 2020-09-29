@@ -5,6 +5,7 @@ open BigTacToe.Pages
 open Fabulous
 open Fabulous.XamarinForms
 open Xamarin.Forms
+open BigTacToe.Shared
 
 module private App =
     type Model =

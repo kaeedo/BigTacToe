@@ -6,6 +6,7 @@ open BigTacToe.Pages
 open Fabulous
 open Fabulous.XamarinForms
 open Xamarin.Forms
+open BigTacToe.Shared
 
 [<RequireQualifiedAccess>]
 module internal Game =

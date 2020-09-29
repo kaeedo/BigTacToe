@@ -1,8 +1,8 @@
 ﻿namespace BigTacToe.Pages
 
-open BigTacToe
+open BigTacToe.Shared
 
-module RemotePlayer =
+module CpuPlayer =
     let private playOutGame model =
         let rec playOut (model: GameModel) =
             match model.Board.Winner with

@@ -1,7 +1,6 @@
-﻿namespace BigTacToe.Pages
+﻿namespace BigTacToe.Shared
 
-open SkiaSharp
-open BigTacToe
+open BigTacToe.Shared
 
 module GameRules =
     let private calculateBoardWinner (tiles: Meeple option [,]) currentPlayer =
@@ -93,17 +92,18 @@ module GameRules =
 
         newBoard model subBoard tile
 
-    let updatedBoard model (point: SKPoint) =
+    let updatedBoard model (point: Point) =
         maybe {
             let! touchedSubBoard =
                 model.Board.SubBoards
                 |> Seq.cast<SubBoard>
                 |> Seq.filter (fun sb -> sb.IsPlayable && sb.Winner.IsNone)
                 |> Seq.tryFind (fun sb -> 
-                    let (left, top, right, bottom) = sb.Rect
-                    let skRect = SKRect(left, top, right, bottom)
+                    //let (left, top, right, bottom) = sb.Rect
+                    //let skRect = SKRect(left, top, right, bottom)
 
-                    skRect.Contains(point)
+                    //skRect.Contains(point)
+                    sb.Rect <* point
                 )
 
             let! touchedSubTile =
@@ -111,10 +111,11 @@ module GameRules =
                 |> Seq.cast<Tile>
                 |> Seq.filter (fun (_, meeple) -> meeple.IsNone)
                 |> Seq.tryFind (fun (rect, _) -> 
-                    let (left, top, right, bottom) = rect
-                    let skRect = SKRect(left, top, right, bottom)
+                    //let (left, top, right, bottom) = rect
+                    //let skRect = SKRect(left, top, right, bottom)
 
-                    skRect.Contains(point)
+                    //skRect.Contains(point)
+                    rect <* point
                 )
 
             return newBoard model touchedSubBoard touchedSubTile

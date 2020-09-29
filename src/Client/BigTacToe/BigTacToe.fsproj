@@ -7,9 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="Utilities.fs" />
     <Compile Include="GamePage\Types.fs" />
-    <Compile Include="GamePage\GameRules.fs" />
+    
     <Compile Include="GamePage\RemotePlayer.fs" />
     <Compile Include="GamePage\Messages.fs" />
     <Compile Include="GamePage\Render.fs" />
@@ -24,7 +23,10 @@
       <PackageReference Include="Fabulous.XamarinForms" Version="0.52.0" />
       <PackageReference Include="Fabulous.XamarinForms.LiveUpdate" Version="0.52.0" />
       <PackageReference Include="FSharp.Core" Version="4.6.2" />
-      <PackageReference Update="FSharp.Core" Version="4.6.2" /> <!-- workaround for VSMac bug https://github.com/mono/monodevelop/pull/5137 -->
+      <PackageReference Update="FSharp.Core" Version="4.7.2" /> <!-- workaround for VSMac bug https://github.com/mono/monodevelop/pull/5137 -->
       <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Shared\BicTacToe.Shared\BicTacToe.Shared.fsproj" />
   </ItemGroup>
 </Project>

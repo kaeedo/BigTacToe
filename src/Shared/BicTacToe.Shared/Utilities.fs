@@ -1,4 +1,4 @@
-﻿namespace BigTacToe
+﻿namespace BigTacToe.Shared
 
 open System
 
@@ -29,6 +29,12 @@ module Utilities =
 
     let tryTakeRandomItem l =
         l |> Seq.sortBy (fun _ -> Guid.NewGuid()) |> Seq.tryHead
+
+    /// Rect contains point
+    let (<*) (rect: Rect) (point: Point) = 
+        let x, y = point
+        let left, top, right, bottom = rect
+        (x >= left) && (x < right) && (y >= top) && (y < bottom)
 
 [<RequireQualifiedAccess>]
 module Array2D =

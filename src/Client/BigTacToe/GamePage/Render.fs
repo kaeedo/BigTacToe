@@ -1,5 +1,6 @@
 ﻿namespace BigTacToe.Pages
 
+open BigTacToe.Shared
 open SkiaSharp
 open SkiaSharp.Views.Forms
 open Xamarin.Essentials

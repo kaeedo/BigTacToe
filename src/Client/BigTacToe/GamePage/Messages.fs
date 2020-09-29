@@ -1,9 +1,8 @@
 ﻿namespace BigTacToe.Pages
 
 open Fabulous
-open GameRules
 open SkiaSharp
-open Xamarin.Forms
+open BigTacToe.Shared
 
 module internal Messages =
     let private calculateSubBoardRect i j (size: SKSizeI) =
@@ -77,19 +76,20 @@ module internal Messages =
             let board = setBigSize model.Board (size.Width, size.Height)
             { model with Board = board }, Cmd.none
         | OpponentPlayed positionPlayed ->
-            let subBoards = playPosition model positionPlayed
-            let model = updateModel model subBoards
+            let subBoards = GameRules.playPosition model positionPlayed
+            let model = GameRules.updateModel model subBoards
             model, Cmd.none
         | SKSurfaceTouched point when
             model.CurrentPlayer = Meeple.Ex && model.Board.Winner.IsNone ->
-            updatedBoard model point
+            let point = point.X, point.Y
+            GameRules.updatedBoard model point
             |> Option.fold (fun _ b ->
-                let model = updateModel model b
+                let model = GameRules.updateModel model b
 
                 let command =
                     if model.Board.Winner.IsSome 
                     then Cmd.none
-                    else Cmd.ofAsyncMsg <| RemotePlayer.playPosition model
+                    else Cmd.ofAsyncMsg <| CpuPlayer.playPosition model
 
                 (model, command)
             ) (model, Cmd.none)
