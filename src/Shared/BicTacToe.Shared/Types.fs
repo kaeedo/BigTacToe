@@ -1,5 +1,7 @@
 ﻿namespace BigTacToe.Shared
 
+open System
+
 type Meeple =
     | Ex
     | Oh
@@ -69,3 +71,26 @@ type GameModel =
             Board = initBoard }
 
 type PositionPlayed = (int * int) * (int * int)
+
+// Game metadata
+
+type GameId = int
+
+module SignalRHub =
+    [<RequireQualifiedAccess>]
+    type Action =
+    | SearchForGame of Guid
+    | HostGame of Guid
+    | JoinGame of GameId * Guid
+    | MakeMove of GameId * Guid * PositionPlayed
+
+    [<RequireQualifiedAccess>]
+    type Response =
+    | GameStarted of GameId * Meeple
+    | GameReady of GameId
+    | MoveMade of Meeple * PositionPlayed // Maybe Result<_, isValid: bool>
+    | GameFinished of Meeple
+
+[<RequireQualifiedAccess>]
+module Endpoints =
+    let [<Literal>] Root = "/gamehub"

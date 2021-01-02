@@ -8,6 +8,7 @@ open Microsoft.Extensions.DependencyInjection
 open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.HttpOverrides
 open Microsoft.Extensions.Logging
+open Fable.SignalR
 
 module Program =
     let webApp =
@@ -18,10 +19,11 @@ module Program =
         ]
 
     let configureApp (app: IApplicationBuilder) =
-        app.UseStaticFiles()
+        app.UseStaticFiles() |> ignore
            //.UseAuthentication()
-           .UseHttpsRedirection()
-           .UseGiraffe(webApp)
+        app.UseHttpsRedirection() |> ignore
+        app.UseSignalR(GameHub.config) |> ignore
+        app.UseGiraffe(webApp) |> ignore
 
     let configureAppConfiguration (context: WebHostBuilderContext) (config: IConfigurationBuilder) =
         config
@@ -41,6 +43,7 @@ module Program =
         ) |> ignore
 
         services.AddGiraffe() |> ignore
+        services.AddSignalR(GameHub.config) |> ignore
 
     let configureLogging (builder : ILoggingBuilder) =
         let filter (l : LogLevel) = l.Equals LogLevel.Error
