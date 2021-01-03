@@ -58,7 +58,8 @@ module internal Messages =
               SubBoards = litteBoards }
 
 
-    let update msg (model: GameModel) =
+    let update msg (model: ClientGameModel) =
+        let gm = model.GameModel
         match msg with
         //| DisplayNewGameAlert ->
         //    let alertResult =
@@ -73,26 +74,27 @@ module internal Messages =
         //    then GameModel.init (), Cmd.none
         //    else model, Cmd.none
         | ResizeCanvas size ->
-            let board = setBigSize model.Board (size.Width, size.Height)
-            { model with Board = board }, Cmd.none
+            let board = setBigSize gm.Board (size.Width, size.Height)
+            let newGm = { gm with Board = board }
+            { model with GameModel = newGm }, Cmd.none
         | OpponentPlayed positionPlayed ->
-            let subBoards = GameRules.playPosition model positionPlayed
-            let model = GameRules.updateModel model subBoards
-            model, Cmd.none
+            let subBoards = GameRules.playPosition gm positionPlayed
+            let newGm = GameRules.updateModel gm subBoards
+            { model with GameModel = newGm }, Cmd.none
         | SKSurfaceTouched point when
-            model.CurrentPlayer = Meeple.Ex && model.Board.Winner.IsNone ->
+            gm.CurrentPlayer = Meeple.Ex && gm.Board.Winner.IsNone ->
             let point = point.X, point.Y
-            GameRules.updatedBoard model point
-            |> Option.fold (fun _ b ->
-                let model = GameRules.updateModel model b
+            match GameRules.updatedBoard gm point with
+            | None -> (model, Cmd.none)
+            | Some subBoard ->
+                let newGm = GameRules.updateModel gm subBoard
 
                 let command =
-                    if model.Board.Winner.IsSome 
+                    if newGm.Board.Winner.IsSome 
                     then Cmd.none
-                    else Cmd.ofAsyncMsg <| CpuPlayer.playPosition model
+                    else Cmd.ofAsyncMsg <| CpuPlayer.playPosition newGm
 
-                (model, command)
-            ) (model, Cmd.none)
+                ({ model with GameModel = newGm }, command)
         | _ -> (model, Cmd.none)
             
                 

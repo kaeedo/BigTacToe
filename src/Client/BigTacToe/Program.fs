@@ -6,11 +6,12 @@ open Fabulous
 open Fabulous.XamarinForms
 open Xamarin.Forms
 open BigTacToe.Shared
+open System
 
 module private App =
     type Model =
         { MainMenuPageModel : MainMenuModel
-          GamePageModel: GameModel option }
+          GamePageModel: ClientGameModel option }
 
     type Pages =
         { MainMenuPage: ViewElement
@@ -70,7 +71,9 @@ module private App =
         | NavigationPopped ->
             navigationMapper model, Cmd.none
         | GoToGame ->
-            let m, cmd = GameModel.init (), Cmd.none
+            let playerId = Guid.NewGuid() // Get this from "actual" player guid
+            let newGm, cmd = GameModel.init playerId, Cmd.none
+            let m = { Size = 100.0, 100.0; GameModel = newGm }
             { model with GamePageModel = Some m }, (Cmd.map GamePageMsg cmd)
 
     let getPages (allPages: Pages) =

@@ -80,7 +80,7 @@ module GameRules =
 
             { sb with IsPlayable = isPlayable })
 
-    let togglePlayer (current: Meeple) =
+    let private togglePlayer (current: Meeple) =
         match current with
         | Meeple.Ex -> Meeple.Oh
         | Meeple.Oh -> Meeple.Ex
@@ -99,10 +99,6 @@ module GameRules =
                 |> Seq.cast<SubBoard>
                 |> Seq.filter (fun sb -> sb.IsPlayable && sb.Winner.IsNone)
                 |> Seq.tryFind (fun sb -> 
-                    //let (left, top, right, bottom) = sb.Rect
-                    //let skRect = SKRect(left, top, right, bottom)
-
-                    //skRect.Contains(point)
                     sb.Rect <* point
                 )
 
@@ -111,17 +107,13 @@ module GameRules =
                 |> Seq.cast<Tile>
                 |> Seq.filter (fun (_, meeple) -> meeple.IsNone)
                 |> Seq.tryFind (fun (rect, _) -> 
-                    //let (left, top, right, bottom) = rect
-                    //let skRect = SKRect(left, top, right, bottom)
-
-                    //skRect.Contains(point)
                     rect <* point
                 )
 
             return newBoard model touchedSubBoard touchedSubTile
         }
 
-    let calculateGameWinner (subBoard: SubBoard [,]) currentPlayer =
+    let private calculateGameWinner (subBoard: SubBoard [,]) currentPlayer =
         let meeples =
             subBoard
             |> Array2D.map (fun sb ->

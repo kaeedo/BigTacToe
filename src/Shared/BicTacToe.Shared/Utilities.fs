@@ -2,6 +2,10 @@
 
 open System
 
+module Map =
+    let Keys (m: Map<'Key, 'T>) =
+        Map.fold (fun keys key _ -> key :: keys) [] m
+
 type MaybeBuilder() =
     member this.Bind(m, f) = Option.bind f m
 

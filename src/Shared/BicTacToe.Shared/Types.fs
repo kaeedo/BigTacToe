@@ -47,11 +47,11 @@ type Board =
             index / 3, index % 3
 
 type GameModel =
-    { CurrentPlayer: Meeple
-      Board: Board
-      Size: float * float }
+    { Players: Guid * (Guid option)
+      CurrentPlayer: Meeple
+      Board: Board }
     with
-      static member init () =
+      static member init playerId =
           let initBoard =
               let subBoard =
                   { SubBoard.Winner = None
@@ -66,11 +66,16 @@ type GameModel =
 
               bigBoard
 
-          { GameModel.Size = 100.0, 100.0 //GridLayout = ViewRef<Grid>()
+          { GameModel.Players = (playerId, None)
             CurrentPlayer = Meeple.Ex
             Board = initBoard }
 
 type PositionPlayed = (int * int) * (int * int)
+
+type GameMove =
+    { Player: Guid
+      Meeple: Meeple
+      PositionPlayed: PositionPlayed }
 
 // Game metadata
 
@@ -82,13 +87,13 @@ module SignalRHub =
     | SearchForGame of Guid
     | HostGame of Guid
     | JoinGame of GameId * Guid
-    | MakeMove of GameId * Guid * PositionPlayed
+    | MakeMove of GameId * GameMove
 
     [<RequireQualifiedAccess>]
     type Response =
     | GameStarted of GameId * Meeple
     | GameReady of GameId
-    | MoveMade of Meeple * PositionPlayed // Maybe Result<_, isValid: bool>
+    | MoveMade of GameMove // Maybe Result<_, isValid: bool>
     | GameFinished of Meeple
 
 [<RequireQualifiedAccess>]

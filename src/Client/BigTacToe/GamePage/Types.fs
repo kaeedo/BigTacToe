@@ -3,10 +3,9 @@
 open SkiaSharp
 open BigTacToe.Shared
 
-
-
-
-    
+type ClientGameModel =
+    { Size: float * float 
+      GameModel: GameModel }
 
 type GameMsg =
     //| DisplayNewGameAlert

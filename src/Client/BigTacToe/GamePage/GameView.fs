@@ -10,10 +10,12 @@ open BigTacToe.Shared
 
 [<RequireQualifiedAccess>]
 module internal Game =
-    let view (model: GameModel) dispatch =
+    let view (model: ClientGameModel) dispatch =
+        let gm = model.GameModel
+
         let gameStatus =
-            match model.Board.Winner with
-            | None -> sprintf "It is %s's turn to play" (model.CurrentPlayer.ToString())
+            match gm.Board.Winner with
+            | None -> sprintf "It is %s's turn to play" (gm.CurrentPlayer.ToString())
             | Some w ->
                 match w with
                 | Draw -> "It's a tie game. Nobody wins"
@@ -23,7 +25,7 @@ module internal Game =
         let gameBoard =
             View.StackLayout
                 (children = [
-                    dependsOn (model.Size, model.Board) (fun _ (size, board) ->
+                    dependsOn (model.Size, gm.Board) (fun _ (size, board) ->
                         View.SKCanvasView
                             (invalidate = true,
                             enableTouchEvents = true,
