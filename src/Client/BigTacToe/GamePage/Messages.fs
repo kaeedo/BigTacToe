@@ -57,6 +57,10 @@ module internal Messages =
               Board.Size = size
               SubBoards = litteBoards }
 
+    let private isMe (currentPlayer: Participant) =
+        match currentPlayer with
+        | Player (_, m) -> m = Meeple.Ex
+        | _ -> false
 
     let update msg (model: ClientGameModel) =
         let gm = model.GameModel
@@ -81,8 +85,7 @@ module internal Messages =
             let subBoards = GameRules.playPosition gm positionPlayed
             let newGm = GameRules.updateModel gm subBoards
             { model with GameModel = newGm }, Cmd.none
-        | SKSurfaceTouched point when
-            gm.CurrentPlayer = Meeple.Ex && gm.Board.Winner.IsNone ->
+        | SKSurfaceTouched point when (isMe gm.CurrentPlayer) && gm.Board.Winner.IsNone -> 
             let point = point.X, point.Y
             match GameRules.updatedBoard gm point with
             | None -> (model, Cmd.none)

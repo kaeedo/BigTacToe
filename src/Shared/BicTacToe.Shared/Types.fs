@@ -2,24 +2,37 @@
 
 open System
 
+type BigTacToeExceptionMessage =
+| InvalidPlayer
+
+type BicTacToeException(msg: BigTacToeExceptionMessage) =
+    inherit Exception(msg.ToString())
+
 type Meeple =
-    | Ex
-    | Oh
+| Ex
+| Oh
     with override this.ToString() =
             match this with
             | Ex -> "X"
             | Oh -> "O"
 
-type BoardWinner =
-    | Player of Meeple
-    | Draw
+type Participant = 
+| Player of Guid * Meeple
+| Missing
+    with override this.ToString() =
+            match this with
+            | Player (id, _) -> id.ToString()
+            | Missing -> "Player missing"
 
+type BoardWinner =
+| Participant of Participant
+| Draw
 
 type Rect = float32 * float32 * float32 * float32 // left, top, right, bottom
 
 type Point = float32 * float32 // x, y
 
-type Tile = Rect * (Meeple option)
+type Tile = Rect * (Participant option)
 
 type SubBoard =
     { Winner: BoardWinner option
@@ -47,11 +60,11 @@ type Board =
             index / 3, index % 3
 
 type GameModel =
-    { Players: Guid * (Guid option)
-      CurrentPlayer: Meeple
+    { Players: Participant * Participant
+      CurrentPlayer: Participant
       Board: Board }
     with
-      static member init playerId =
+      static member init participant =
           let initBoard =
               let subBoard =
                   { SubBoard.Winner = None
@@ -66,15 +79,14 @@ type GameModel =
 
               bigBoard
 
-          { GameModel.Players = (playerId, None)
-            CurrentPlayer = Meeple.Ex
+          { GameModel.Players = (participant, Participant.Missing)
+            CurrentPlayer = participant
             Board = initBoard }
 
 type PositionPlayed = (int * int) * (int * int)
 
 type GameMove =
-    { Player: Guid
-      Meeple: Meeple
+    { Player: Participant
       PositionPlayed: PositionPlayed }
 
 // Game metadata
@@ -84,6 +96,7 @@ type GameId = int
 module SignalRHub =
     [<RequireQualifiedAccess>]
     type Action =
+    | OnConnect of Guid
     | SearchForGame of Guid
     | HostGame of Guid
     | JoinGame of GameId * Guid

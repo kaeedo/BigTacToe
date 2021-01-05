@@ -65,7 +65,11 @@ module CpuPlayer =
                         let bestPlay =
                             bestPlay
                             |> Seq.countBy id
-                            |> Seq.filter (fun (bw, _) -> bw = Player Meeple.Oh)
+                            |> Seq.filter (fun (bw, _) -> 
+                                match bw with
+                                | Participant (Player (_, Meeple.Oh)) -> true
+                                | _ -> false
+                            )
                             |> Seq.sortByDescending snd
                             |> Seq.tryHead
                             |> Option.fold (fun _ bw -> snd bw) 0

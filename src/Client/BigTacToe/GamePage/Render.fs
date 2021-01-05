@@ -70,11 +70,13 @@ module internal Render =
         winner
         |> Option.iter (fun w ->
             match w with
-            | Player m -> 
+            | Participant (Player (_, m)) -> 
                 if m = Meeple.Ex 
                 then drawEx Colors.gameWinner canvas rect 
                 else drawOh Colors.gameWinner canvas rect
-            | Draw -> drawGameDraw canvas rect)
+            | Draw -> drawGameDraw canvas rect
+            | _ -> ()
+        )
 
     let drawBoard (args: SKPaintSurfaceEventArgs) (board: Board) =
         use canvas = args.Surface.Canvas
@@ -147,5 +149,9 @@ module internal Render =
                 meeple
                 |> Option.iter (fun m ->
                     match m with
-                    | Meeple.Ex -> drawEx Colors.meepleEx canvas skRect
-                    | Meeple.Oh -> drawOh Colors.meepleOh canvas skRect)))
+                    | Player (_, Meeple.Ex) -> drawEx Colors.meepleEx canvas skRect
+                    | Player (_, Meeple.Oh) -> drawOh Colors.meepleOh canvas skRect
+                    | _ -> ()
+                )
+            )
+        )

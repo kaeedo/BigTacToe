@@ -5,6 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="Railways.fs" />
     <Compile Include="Types.fs" />
     <Compile Include="Utilities.fs" />
     <Compile Include="GameRules.fs" />

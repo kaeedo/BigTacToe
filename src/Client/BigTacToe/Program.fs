@@ -71,8 +71,11 @@ module private App =
         | NavigationPopped ->
             navigationMapper model, Cmd.none
         | GoToGame ->
-            let playerId = Guid.NewGuid() // Get this from "actual" player guid
-            let newGm, cmd = GameModel.init playerId, Cmd.none
+            let participant = Player (Guid.NewGuid(), Meeple.Ex) // Get this from "actual" player guid
+            let opponent = Player (Guid.NewGuid(), Meeple.Oh) // Only for single player
+            let newGm = GameModel.init participant
+            let newGm = { newGm with Players = (participant, opponent) }
+            let newGm, cmd = newGm, Cmd.none
             let m = { Size = 100.0, 100.0; GameModel = newGm }
             { model with GamePageModel = Some m }, (Cmd.map GamePageMsg cmd)
 

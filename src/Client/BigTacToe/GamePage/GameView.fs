@@ -19,7 +19,7 @@ module internal Game =
             | Some w ->
                 match w with
                 | Draw -> "It's a tie game. Nobody wins"
-                | Player p -> sprintf "%s wins!" (p.ToString())
+                | Participant p -> sprintf "%s wins!" (p.ToString())
             
 
         let gameBoard =

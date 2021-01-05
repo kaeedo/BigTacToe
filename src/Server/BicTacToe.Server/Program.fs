@@ -9,6 +9,7 @@ open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.HttpOverrides
 open Microsoft.Extensions.Logging
 open Fable.SignalR
+open BigTacToe.Server
 
 module Program =
     let webApp =
@@ -22,7 +23,7 @@ module Program =
         app.UseStaticFiles() |> ignore
            //.UseAuthentication()
         app.UseHttpsRedirection() |> ignore
-        app.UseSignalR(GameHub.config) |> ignore
+        app.UseSignalR(GameHub.settings) |> ignore
         app.UseGiraffe(webApp) |> ignore
 
     let configureAppConfiguration (context: WebHostBuilderContext) (config: IConfigurationBuilder) =
@@ -32,6 +33,7 @@ module Program =
             |> ignore
 
     let configureServices (services: IServiceCollection) =
+        services.AddSingleton<GameManager.Manager>() |> ignore
         let sp  = services.BuildServiceProvider()
         let conf = sp.GetService<IConfiguration>()
 
@@ -43,56 +45,17 @@ module Program =
         ) |> ignore
 
         services.AddGiraffe() |> ignore
-        services.AddSignalR(GameHub.config) |> ignore
+        services.AddSignalR(GameHub.settings) |> ignore
 
     let configureLogging (builder : ILoggingBuilder) =
         let filter (l : LogLevel) = l.Equals LogLevel.Error
         builder.AddFilter(filter).AddConsole().AddDebug() |> ignore
 
-
-    // Find random game
-    // Join speciic game
-
-
-    /////////////////////////
-    // Server
-    /////////////////////////
-
-    // GameSession
-    //// ID
-    //// Started
-    //// Private or Public
-    //// GameState
-    //// MovesPlayed list
-
-    // GameMove
-    //// GameSessionId
-    //// TimePlayedAt
-    //// MoveMade (Player * [i,j])
-
-
-    /////////////////////////
-    // Client
-    /////////////////////////
-
-    // GameSession
-    //// PlayingAs (Ex or Oh)
-    //// ID
-    //// GameState
-
-    // GameMove (send/receive to server or AI session)
-    //// GameSessionId
-    //// MoveMade (Player * [i,j])
-
     [<EntryPoint>]
     let main _ =
-        //let contentRoot = Directory.GetCurrentDirectory()
-        //let webRoot = Path.Combine(contentRoot, "WebRoot")
 
         WebHostBuilder()
             .UseKestrel()
-            //.UseContentRoot(contentRoot)
-            //.UseWebRoot(webRoot)
             .UseUrls("https://0.0.0.0:5000")
             .ConfigureAppConfiguration(configureAppConfiguration)
             .Configure(Action<IApplicationBuilder> configureApp)

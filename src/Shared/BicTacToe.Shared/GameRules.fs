@@ -3,7 +3,7 @@
 open BigTacToe.Shared
 
 module GameRules =
-    let private calculateBoardWinner (tiles: Meeple option [,]) currentPlayer =
+    let private calculateBoardWinner (tiles: Participant option [,]) currentPlayer =
         let checks = [ 0; 1; 2 ]
 
         let allSameMeeple meeple = meeple = (Some currentPlayer)
@@ -32,7 +32,7 @@ module GameRules =
              diagonalOne
              diagonalTwo ]
            |> Seq.exists id then
-            Some(Player currentPlayer)
+            Some(Participant currentPlayer)
         else
             None
 
@@ -80,10 +80,12 @@ module GameRules =
 
             { sb with IsPlayable = isPlayable })
 
-    let private togglePlayer (current: Meeple) =
-        match current with
-        | Meeple.Ex -> Meeple.Oh
-        | Meeple.Oh -> Meeple.Ex
+    let private togglePlayer (current: GameModel) =
+        let (player1, player2) = current.Players
+        
+        if current.CurrentPlayer = player1
+        then player2
+        else player1
 
     let playPosition (model: GameModel) (positionPlayed: PositionPlayed) =
         let (sbi, sbj), (ti, tj) = positionPlayed
@@ -119,7 +121,7 @@ module GameRules =
             |> Array2D.map (fun sb ->
                 sb.Winner
                 |> Option.bind (function
-                    | Player m -> Some m
+                    | Participant m -> Some m
                     | _ -> None))
 
         let isDraw (subBoards: SubBoard [,]) =
@@ -137,4 +139,4 @@ module GameRules =
                 { model.Board with
                     SubBoards = subBoards
                     Winner = calculateGameWinner subBoards model.CurrentPlayer }
-            CurrentPlayer = togglePlayer model.CurrentPlayer }
+            CurrentPlayer = togglePlayer model }
