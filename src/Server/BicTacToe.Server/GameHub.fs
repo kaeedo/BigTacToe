@@ -24,9 +24,9 @@ module GameHub =
         match msg with
         | Action.OnConnect playerId ->
             hubContext.Groups.AddToGroupAsync(hubContext.Context.ConnectionId, playerId.ToString())
-        | Action.SearchForGame playerId ->
+        | Action.SearchOrCreateGame playerId ->
             let tryGetGame = 
-                manager.TryJoinGame
+                manager.JoinRandomGame
                 >=> manager.GetGame
 
             match tryGetGame playerId with
@@ -36,6 +36,7 @@ module GameHub =
                              hubContext.Clients.Group(player2.ToString()).Send(Response.GameStarted (gameId, Meeple.Ex)))
             | Error NoOngoingGames -> 
                 let newGame = manager.StartGame playerId
+                // send waiting for opponent
                 hubContext.Clients.Group(playerId.ToString()).Send(Response.GameStarted (newGame, Meeple.Ex))
             | Error _ -> Task.FromResult(()) :> Task // FIX THIS
 
@@ -48,13 +49,13 @@ module GameHub =
                 Task.WhenAll(hubContext.Clients.Group(player1.ToString()).Send(Response.MoveMade moveMade), 
                              hubContext.Clients.Group(player2.ToString()).Send(Response.MoveMade moveMade))
 
-        | Action.HostGame playerId ->
+        | Action.HostPrivateGame playerId ->
             // send waiting for opponent
             let newGame = manager.StartGame playerId
             hubContext.Clients.Group(playerId.ToString()).Send(Response.GameStarted (newGame, Meeple.Ex))
-        | Action.JoinGame (gameId, playerId) ->
+        | Action.JoinPrivateGame (gameId, playerId) ->
             let tryJoinGame =
-                manager.JoinGame playerId
+                manager.JoinPrivateGame playerId
                 >=> manager.GetGame
 
             match tryJoinGame gameId with

@@ -97,9 +97,9 @@ module SignalRHub =
     [<RequireQualifiedAccess>]
     type Action =
     | OnConnect of Guid
-    | SearchForGame of Guid
-    | HostGame of Guid
-    | JoinGame of GameId * Guid
+    | SearchOrCreateGame of Guid
+    | HostPrivateGame of Guid
+    | JoinPrivateGame of GameId * Guid
     | MakeMove of GameId * GameMove
 
     [<RequireQualifiedAccess>]
