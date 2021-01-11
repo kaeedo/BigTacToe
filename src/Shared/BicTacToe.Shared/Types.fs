@@ -32,6 +32,9 @@ type Rect = float32 * float32 * float32 * float32 // left, top, right, bottom
 
 type Point = float32 * float32 // x, y
 
+// TODO FIX THIS IMMEDIATELY.
+// Rect is a view concern. Also, matching is done against pixel sizes where every env has different values
+// breaks everything
 type Tile = Rect * (Participant option)
 
 type SubBoard =

@@ -132,17 +132,19 @@ module GameManager =
                                 else
                                     let subBoards = GameRules.playPosition g gameMove.PositionPlayed
                                     let newGameModel = GameRules.updateModel g subBoards
+                                    printfn "%A" newGameModel
 
                                     rc.Reply (Result.Ok (newGameModel, gameMove))
 
                                     match newGameModel.Board.Winner with
                                     | Some w ->
+                                        printfn "Somebody won?"
                                         let ongoingGames = state.OngoingGames.Remove gameId
                                     
                                         return! loop { state with OngoingGames = ongoingGames }
                                     | None ->
                                         let ongoingGames = state.OngoingGames.Add (gameId, newGameModel)
-                                
+                                        printfn "%A" ongoingGames
                                         return! loop { state with OngoingGames = ongoingGames }
                     }
             
