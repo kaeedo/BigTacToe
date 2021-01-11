@@ -3,6 +3,7 @@
 open Fabulous
 open SkiaSharp
 open BigTacToe.Shared
+open System
 
 module internal Messages =
     let private calculateSubBoardRect i j (size: SKSizeI) =
@@ -36,6 +37,20 @@ module internal Messages =
             ((left, top, right, bottom), meeple)
         )
 
+    let private calculateTileIndex (size: float * float) (point: SKPoint) =
+        let (sizeX, sizeY) = size
+        let (pointX, pointY) = point.X, point.Y
+
+        let x = 
+            let segmentSize = float32 sizeX / 9.0f
+            int (pointX / segmentSize)
+
+        let y = 
+            let segmentSize = float32 sizeY / 9.0f
+            int (pointY / segmentSize)
+
+        x, y
+
     let private setBigSize board (size: int * int) =
         let (width, height) = size
         let contrainedSize = if width > height then height else width
@@ -50,7 +65,8 @@ module internal Messages =
                 let a = calculateSubTiles r subBoard.Tiles 
                 //let rect = SKRect
                 { subBoard with
-                      Rect = r
+                      Index = 1,1 
+                      //Rect = r
                       Tiles = a})
 
         { board with
@@ -86,8 +102,9 @@ module internal Messages =
             let newGm = GameRules.updateModel gm subBoards
             { model with GameModel = newGm }, Cmd.none
         | SKSurfaceTouched point when (isMe gm.CurrentPlayer) && gm.Board.Winner.IsNone -> 
-            let point = point.X, point.Y
-            match GameRules.updatedBoard gm point with
+            let tileIndex = calculateTileIndex model.Size point
+            
+            match GameRules.updatedBoard gm tileIndex with
             | None -> (model, Cmd.none)
             | Some subBoard ->
                 let newGm = GameRules.updateModel gm subBoard

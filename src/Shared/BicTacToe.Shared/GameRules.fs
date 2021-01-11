@@ -94,22 +94,26 @@ module GameRules =
 
         newBoard model subBoard tile
 
-    let updatedBoard model (point: Point) =
+    let updatedBoard model (tileIndex: int * int) =
+        let subBoardIndex = 
+            let (tileIndexI, tileIndexJ) = tileIndex
+            (tileIndexI % 3, tileIndexJ % 3)
+
         maybe {
             let! touchedSubBoard =
                 model.Board.SubBoards
                 |> Seq.cast<SubBoard>
                 |> Seq.filter (fun sb -> sb.IsPlayable && sb.Winner.IsNone)
                 |> Seq.tryFind (fun sb -> 
-                    sb.Rect <* point
+                    sb.Index = subBoardIndex
                 )
 
             let! touchedSubTile =
                 touchedSubBoard.Tiles
                 |> Seq.cast<Tile>
                 |> Seq.filter (fun (_, meeple) -> meeple.IsNone)
-                |> Seq.tryFind (fun (rect, _) -> 
-                    rect <* point
+                |> Seq.tryFind (fun (ti, _) -> 
+                    ti = tileIndex
                 )
 
             return newBoard model touchedSubBoard touchedSubTile

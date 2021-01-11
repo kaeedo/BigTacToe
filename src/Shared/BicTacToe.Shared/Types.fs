@@ -28,18 +28,11 @@ type BoardWinner =
 | Participant of Participant
 | Draw
 
-type Rect = float32 * float32 * float32 * float32 // left, top, right, bottom
-
-type Point = float32 * float32 // x, y
-
-// TODO FIX THIS IMMEDIATELY.
-// Rect is a view concern. Also, matching is done against pixel sizes where every env has different values
-// breaks everything
-type Tile = Rect * (Participant option)
+type Tile = (int * int) * (Participant option)
 
 type SubBoard =
     { Winner: BoardWinner option
-      Rect: Rect
+      Index: int * int
       IsPlayable: bool
       Tiles: Tile [,] }
     with 
@@ -69,16 +62,18 @@ type GameModel =
     with
       static member init participant =
           let initBoard =
-              let subBoard =
+              let subBoard i j =
+                  let newI = i + (i * 2)
+                  let newJ = j + (j * 2)
                   { SubBoard.Winner = None
-                    Rect = 0.0f, 0.0f, 0.0f, 0.0f
+                    Index = i, j
                     IsPlayable = true
-                    Tiles = Array2D.init 3 3 (fun _ _ -> (0.0f, 0.0f, 0.0f, 0.0f), None) }
+                    Tiles = Array2D.init 3 3 (fun i j -> (newI + i, newJ + j), None) }
 
               let bigBoard =
                   { Board.Winner = None
                     Size = (0, 0)
-                    SubBoards = Array2D.init 3 3 (fun _ _ -> subBoard) }
+                    SubBoards = Array2D.init 3 3 (fun i j -> subBoard i j) }
 
               bigBoard
 
