@@ -19,7 +19,6 @@
   <ItemGroup>
       <PackageReference Include="Fable.SignalR.DotNet.Elmish" Version="0.11.1" />
       <PackageReference Include="Fabulous.XamarinForms.SkiaSharp" Version="0.60.0" />
-      <PackageReference Include="SkiaSharp" Version="1.68.3" />
       <PackageReference Include="Xamarin.Forms" Version="4.8.0.1821" />
       <PackageReference Include="Xamarin.Essentials" Version="1.6.0" />
       <PackageReference Include="Fabulous.XamarinForms" Version="0.60.0" />
