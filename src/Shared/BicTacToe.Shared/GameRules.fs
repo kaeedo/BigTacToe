@@ -100,6 +100,7 @@ module GameRules =
             (tileIndexI % 3, tileIndexJ % 3)
 
         maybe {
+            // Refactor these to access subboard and tile directly by index
             let! touchedSubBoard =
                 model.Board.SubBoards
                 |> Seq.cast<SubBoard>

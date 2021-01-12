@@ -3,40 +3,8 @@
 open Fabulous
 open SkiaSharp
 open BigTacToe.Shared
-open System
 
 module internal Messages =
-    let private calculateSubBoardRect i j (size: SKSizeI) =
-        let width = float32 size.Width
-        let height = float32 size.Height
-
-        let left = width * i
-        let top = height * j
-        let right = left + width
-        let bottom = top + height
-
-        (left, top, right, bottom)
-
-    let private calculateSubTiles (parentRect: Rect) (tiles: Tile [,]) =
-        let (left, top, right, bottom) = parentRect
-        let skRect = SKRect(left, top, right, bottom)
-        let subSize =
-            SKSizeI(int <| skRect.Width / 3.0f, int <| skRect.Height / 3.0f)
-
-        tiles
-        |> Array2D.mapi (fun i j (rect, meeple) ->
-            let left =
-                skRect.Left + float32 (subSize.Width * i)
-
-            let right = left + float32 subSize.Width
-
-            let top =
-                skRect.Top + float32 (subSize.Height * j)
-
-            let bottom = top + float32 subSize.Height
-            ((left, top, right, bottom), meeple)
-        )
-
     let private calculateTileIndex (size: float * float) (point: SKPoint) =
         let (sizeX, sizeY) = size
         let (pointX, pointY) = point.X, point.Y
@@ -50,28 +18,6 @@ module internal Messages =
             int (pointY / segmentSize)
 
         x, y
-
-    let private setBigSize board (size: int * int) =
-        let (width, height) = size
-        let contrainedSize = if width > height then height else width
-        let subSize = SKSizeI(contrainedSize / 3, contrainedSize / 3)
-
-        let litteBoards =
-            board.SubBoards
-            |> Array2D.mapi (fun i j subBoard ->
-                let (left, top, right, bottom) =
-                    calculateSubBoardRect (float32 i) (float32 j) subSize
-                let r: Rect = (left, top, right, bottom)
-                let a = calculateSubTiles r subBoard.Tiles 
-                //let rect = SKRect
-                { subBoard with
-                      Index = 1,1 
-                      //Rect = r
-                      Tiles = a})
-
-        { board with
-              Board.Size = size
-              SubBoards = litteBoards }
 
     let private isMe (currentPlayer: Participant) =
         match currentPlayer with
@@ -94,7 +40,8 @@ module internal Messages =
         //    then GameModel.init (), Cmd.none
         //    else model, Cmd.none
         | ResizeCanvas size ->
-            let board = setBigSize gm.Board (size.Width, size.Height)
+            let board = { gm.Board with Board.Size = (size.Width, size.Height) }
+                //setBigSize gm.Board size.Width size.Height
             let newGm = { gm with Board = board }
             { model with GameModel = newGm }, Cmd.none
         | OpponentPlayed positionPlayed ->

@@ -78,6 +78,34 @@ module internal Render =
             | _ -> ()
         )
 
+    let private calculateSubBoardRect i j (width, height) =
+        let left = width * i
+        let top = height * j
+        let right = left + width
+        let bottom = top + height
+
+        (left, top, right, bottom)
+
+    let private calculateTileRect (tileI, tileJ) (subBoardRect: SKRect) =
+        let iInSubBoard = tileI / 3
+        let jInSubBoard = tileJ / 3
+
+        let parentRect = subBoardRect
+        let subSize =
+            SKSizeI(int <| parentRect.Width / 3.0f, int <| parentRect.Height / 3.0f)
+
+        let left =
+            parentRect.Left + float32 (subSize.Width * iInSubBoard)
+
+        let right = left + float32 subSize.Width
+
+        let top =
+            parentRect.Top + float32 (subSize.Height * jInSubBoard)
+
+        let bottom = top + float32 subSize.Height
+
+        SKRect(left, top, right, bottom)
+
     let drawBoard (args: SKPaintSurfaceEventArgs) (board: Board) =
         use canvas = args.Surface.Canvas
 
@@ -107,29 +135,28 @@ module internal Render =
         board.SubBoards
         |> Array2D.iteri (fun i j sb ->
             // Extract this everywhere
-            let (left, top, right, bottom) = sb.Rect
-            let skRect = SKRect(left, top, right, bottom)
+            let (left, top, right, bottom) = calculateSubBoardRect i j board.Size
+            let subBoardRect = SKRect(float32 left, float32 top, float32 right, float32 bottom)
 
             let isOddGrid = ((i + j) * (i + j)) % 2 = 0
             
             // Draw sub board borders
             //canvas.Scale(2.0f)
-            canvas.DrawRect(skRect, if isOddGrid then oddGridPaint else evenGridPaint)
+            canvas.DrawRect(subBoardRect, if isOddGrid then oddGridPaint else evenGridPaint)
 
             sb.Tiles
-            |> Array2D.iter (fun (rect, _) -> 
-                let (left, top, right, bottom) = rect
-                let skRect = SKRect(left, top, right, bottom)
+            |> Array2D.iter (fun (globalIndex, _) -> 
+                let tileRect = calculateTileRect globalIndex subBoardRect
                 
-                canvas.DrawRect(skRect, smallPaint)
+                canvas.DrawRect(tileRect, smallPaint)
             )
 
             // Draw playability grey out
             if not isFreeMove && sb.IsPlayable
             then
-                canvas.DrawRect(skRect, transparentPaint)
+                canvas.DrawRect(subBoardRect, transparentPaint)
 
-            drawWinner sb.Winner canvas skRect)
+            drawWinner sb.Winner canvas subBoardRect)
 
         // draw main winner
         let (width, height) = board.Size
@@ -140,18 +167,21 @@ module internal Render =
         use canvas = args.Surface.Canvas
 
         board.SubBoards
-        |> Array2D.iter (fun sb ->
+        |> Array2D.iteri (fun i j sb ->
+            let (left, top, right, bottom) = calculateSubBoardRect i j board.Size
+            let subBoardRect = SKRect(float32 left, float32 top, float32 right, float32 bottom)
+
             sb.Tiles
-            |> Array2D.iter (fun (rect, meeple) ->
-                let (left, top, right, bottom) = rect
-                let skRect = SKRect(left, top, right, bottom)
+            |> Array2D.iter (fun (globalIndex, meeple) ->
+                //let (left, top, right, bottom) = rect
+                let tileRect = calculateTileRect globalIndex subBoardRect
 
                 meeple
                 |> Option.iter (fun m ->
                     match m with
-                    | Player (_, Meeple.Ex) -> drawEx Colors.meepleEx canvas skRect
-                    | Player (_, Meeple.Oh) -> drawOh Colors.meepleOh canvas skRect
-                    | _ -> ()
+                    | Player (_, Meeple.Ex) -> drawEx Colors.meepleEx canvas tileRect
+                    | Player (_, Meeple.Oh) -> drawOh Colors.meepleOh canvas tileRect
+                    | Missing -> ()
                 )
             )
         )
