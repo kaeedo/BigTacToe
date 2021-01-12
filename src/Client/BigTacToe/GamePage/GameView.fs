@@ -5,6 +5,7 @@ open BigTacToe.Pages
 
 open Fabulous
 open Fabulous.XamarinForms
+open Fabulous.XamarinForms.SkiaSharp
 open Xamarin.Forms
 open BigTacToe.Shared
 
@@ -54,7 +55,7 @@ module internal Game =
                             padding = Thickness 20.0,
                             ref = ViewRef<Grid>(), //model.GridLayout,
                             children = [
-                            View.Label(text = gameStatus, fontSize = FontSize 24.0, horizontalTextAlignment = TextAlignment.Center)
+                            View.Label(text = gameStatus, fontSize = FontSize.Size 24.0, horizontalTextAlignment = TextAlignment.Center)
                             gameBoard.Row(1)
                             View.Label(text = "AI thinking", horizontalTextAlignment = TextAlignment.Center).Row(2)
                             ]))

@@ -3,8 +3,6 @@
 open BigTacToe.Shared
 open SkiaSharp
 open SkiaSharp.Views.Forms
-open Xamarin.Essentials
-open Fabulous.XamarinForms
 
 [<RequireQualifiedAccess>]
 module internal Render =

@@ -38,11 +38,11 @@ module internal MainMenu =
                      children = [
                         View.Label(
                             text = "Big Tac Toe", 
-                            fontSize = FontSize 36.0, 
+                            fontSize = FontSize.Size 36.0, 
                             horizontalTextAlignment = TextAlignment.Center
                         )
                         View.Image(
-                            source = Path "placeholder.png",
+                            source = Image.fromPath "placeholder.png",
                             aspect = Aspect.AspectFit
                         ).Row(1)
                         View.Button(

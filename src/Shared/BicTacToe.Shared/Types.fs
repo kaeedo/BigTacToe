@@ -35,13 +35,6 @@ type SubBoard =
       Index: int * int
       IsPlayable: bool
       Tiles: Tile [,] }
-    with 
-        member this.GetTileIndex tile =
-            let index =
-                this.Tiles
-                |> Seq.cast<Tile>
-                |> Seq.findIndex (fun t -> t = tile)
-            index / 3, index % 3
 
 type Board =
     { Winner: BoardWinner option
