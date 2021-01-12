@@ -4,6 +4,7 @@ open BigTacToe.Shared
 open SkiaSharp
 open SkiaSharp.Views.Forms
 open Xamarin.Essentials
+open Fabulous.XamarinForms
 
 [<RequireQualifiedAccess>]
 module internal Render =
@@ -79,6 +80,7 @@ module internal Render =
         )
 
     let private calculateSubBoardRect i j (width, height) =
+        let (width, height) = width / 3, height / 3
         let left = width * i
         let top = height * j
         let right = left + width
@@ -87,8 +89,8 @@ module internal Render =
         (left, top, right, bottom)
 
     let private calculateTileRect (tileI, tileJ) (subBoardRect: SKRect) =
-        let iInSubBoard = tileI / 3
-        let jInSubBoard = tileJ / 3
+        let iInSubBoard = tileI % 3
+        let jInSubBoard = tileJ % 3
 
         let parentRect = subBoardRect
         let subSize =
@@ -147,7 +149,6 @@ module internal Render =
             sb.Tiles
             |> Array2D.iter (fun (globalIndex, _) -> 
                 let tileRect = calculateTileRect globalIndex subBoardRect
-                
                 canvas.DrawRect(tileRect, smallPaint)
             )
 
