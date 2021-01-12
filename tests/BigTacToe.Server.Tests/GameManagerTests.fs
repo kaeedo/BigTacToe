@@ -221,7 +221,7 @@ module GameManagerTests =
                 test <@ gameModel.CurrentPlayer = participant2 @>
             }
 
-            Tests.ftest "When player1 and player2 play valid moves, current player should be player1" {
+            Tests.test "When player1 and player2 play valid moves, current player should be player1" {
                 // Arrange
                 let gm = Manager()
 

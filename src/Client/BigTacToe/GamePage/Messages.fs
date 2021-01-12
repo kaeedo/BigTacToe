@@ -5,7 +5,7 @@ open SkiaSharp
 open BigTacToe.Shared
 
 module internal Messages =
-    let private calculateTileIndex (size: float * float) (point: SKPoint) =
+    let private calculateTileIndex (size: int * int) (point: SKPoint) =
         let (sizeX, sizeY) = size
         let (pointX, pointY) = point.X, point.Y
 
@@ -40,8 +40,8 @@ module internal Messages =
         //    then GameModel.init (), Cmd.none
         //    else model, Cmd.none
         | ResizeCanvas size ->
-            let board = { gm.Board with Board.Size = (size.Width, size.Height) }
-                //setBigSize gm.Board size.Width size.Height
+            let smallerDimension = if size.Width < size.Height then size.Width else size.Height
+            let board = { gm.Board with Board.Size = (smallerDimension, smallerDimension) }
             let newGm = { gm with Board = board }
             { model with GameModel = newGm }, Cmd.none
         | OpponentPlayed positionPlayed ->
@@ -49,7 +49,7 @@ module internal Messages =
             let newGm = GameRules.updateModel gm subBoards
             { model with GameModel = newGm }, Cmd.none
         | SKSurfaceTouched point when (isMe gm.CurrentPlayer) && gm.Board.Winner.IsNone -> 
-            let tileIndex = calculateTileIndex model.Size point
+            let tileIndex = calculateTileIndex model.GameModel.Board.Size point
             
             match GameRules.updatedBoard gm tileIndex with
             | None -> (model, Cmd.none)

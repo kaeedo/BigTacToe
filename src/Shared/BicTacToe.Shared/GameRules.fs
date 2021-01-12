@@ -97,7 +97,7 @@ module GameRules =
     let updatedBoard model (tileIndex: int * int) =
         let subBoardIndex = 
             let (tileIndexI, tileIndexJ) = tileIndex
-            (tileIndexI % 3, tileIndexJ % 3)
+            (tileIndexI / 3, tileIndexJ / 3)
 
         maybe {
             // Refactor these to access subboard and tile directly by index
