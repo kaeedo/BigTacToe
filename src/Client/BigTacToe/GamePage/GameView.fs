@@ -37,8 +37,8 @@ module internal Game =
                          
                                     args.Surface.Canvas.Clear()
                          
-                                    Render.drawBoard args board
-                                    Render.drawMeeple args board),
+                                    Render.drawBoard args model
+                                    Render.drawMeeple args model),
                             touch =
                                 (fun args ->
                                     if args.InContact

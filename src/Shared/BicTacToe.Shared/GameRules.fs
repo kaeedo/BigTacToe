@@ -95,19 +95,18 @@ module GameRules =
         newBoard model subBoard tile
 
     let updatedBoard model (tileIndex: int * int) =
-        let subBoardIndex = 
-            let (tileIndexI, tileIndexJ) = tileIndex
-            (tileIndexI / 3, tileIndexJ / 3)
+        let (tileIndexI, tileIndexJ) = tileIndex
+
+        let subBoardIndexI = tileIndexI / 3
+        let subBoardIndexJ = tileIndexJ / 3
 
         maybe {
-            // Refactor these to access subboard and tile directly by index
             let! touchedSubBoard =
-                model.Board.SubBoards
-                |> Seq.cast<SubBoard>
-                |> Seq.filter (fun sb -> sb.IsPlayable && sb.Winner.IsNone)
-                |> Seq.tryFind (fun sb -> 
-                    sb.Index = subBoardIndex
-                )
+                let sb = model.Board.SubBoards.[subBoardIndexI, subBoardIndexJ]
+                
+                match sb.IsPlayable && sb.Winner.IsNone with
+                | true -> Some sb
+                | false -> None
 
             let! touchedSubTile =
                 touchedSubBoard.Tiles

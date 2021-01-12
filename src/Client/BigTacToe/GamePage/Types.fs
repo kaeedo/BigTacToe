@@ -4,7 +4,7 @@ open SkiaSharp
 open BigTacToe.Shared
 
 type ClientGameModel =
-    { Size: float * float 
+    { Size: int * int
       GameModel: GameModel }
 
 type GameMsg =

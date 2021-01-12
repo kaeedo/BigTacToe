@@ -108,7 +108,8 @@ module internal Render =
 
         SKRect(left, top, right, bottom)
 
-    let drawBoard (args: SKPaintSurfaceEventArgs) (board: Board) =
+    let drawBoard (args: SKPaintSurfaceEventArgs) (clientGameModel: ClientGameModel) =
+        let board = clientGameModel.GameModel.Board
         use canvas = args.Surface.Canvas
 
         use paint =
@@ -137,7 +138,7 @@ module internal Render =
         board.SubBoards
         |> Array2D.iteri (fun i j sb ->
             // Extract this everywhere
-            let (left, top, right, bottom) = calculateSubBoardRect i j board.Size
+            let (left, top, right, bottom) = calculateSubBoardRect i j clientGameModel.Size
             let subBoardRect = SKRect(float32 left, float32 top, float32 right, float32 bottom)
 
             let isOddGrid = ((i + j) * (i + j)) % 2 = 0
@@ -160,16 +161,17 @@ module internal Render =
             drawWinner sb.Winner canvas subBoardRect)
 
         // draw main winner
-        let (width, height) = board.Size
+        let (width, height) = clientGameModel.Size
         let constrainedSize = if width > height then height else width
         drawWinner board.Winner canvas (SKRect(0.0f, 0.0f, float32 constrainedSize, float32 constrainedSize))
 
-    let drawMeeple (args: SKPaintSurfaceEventArgs) (board: Board) =
+    let drawMeeple (args: SKPaintSurfaceEventArgs) (clientGameModel: ClientGameModel) =
+        let board = clientGameModel.GameModel.Board
         use canvas = args.Surface.Canvas
 
         board.SubBoards
         |> Array2D.iteri (fun i j sb ->
-            let (left, top, right, bottom) = calculateSubBoardRect i j board.Size
+            let (left, top, right, bottom) = calculateSubBoardRect i j clientGameModel.Size
             let subBoardRect = SKRect(float32 left, float32 top, float32 right, float32 bottom)
 
             sb.Tiles

@@ -41,15 +41,15 @@ module internal Messages =
         //    else model, Cmd.none
         | ResizeCanvas size ->
             let smallerDimension = if size.Width < size.Height then size.Width else size.Height
-            let board = { gm.Board with Board.Size = (smallerDimension, smallerDimension) }
-            let newGm = { gm with Board = board }
-            { model with GameModel = newGm }, Cmd.none
+            //let board = { gm.Board with Board.Size = (smallerDimension, smallerDimension) }
+            //let newGm = { gm with Board = board }
+            { model with Size = (smallerDimension, smallerDimension) }, Cmd.none
         | OpponentPlayed positionPlayed ->
             let subBoards = GameRules.playPosition gm positionPlayed
             let newGm = GameRules.updateModel gm subBoards
             { model with GameModel = newGm }, Cmd.none
         | SKSurfaceTouched point when (isMe gm.CurrentPlayer) && gm.Board.Winner.IsNone -> 
-            let tileIndex = calculateTileIndex model.GameModel.Board.Size point
+            let tileIndex = calculateTileIndex model.Size point
             
             match GameRules.updatedBoard gm tileIndex with
             | None -> (model, Cmd.none)

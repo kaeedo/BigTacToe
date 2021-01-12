@@ -76,7 +76,7 @@ module private App =
             let newGm = GameModel.init participant
             let newGm = { newGm with Players = (participant, opponent) }
             let newGm, cmd = newGm, Cmd.none
-            let m = { Size = 100.0, 100.0; GameModel = newGm }
+            let m = { Size = 100, 100; GameModel = newGm }
             { model with GamePageModel = Some m }, (Cmd.map GamePageMsg cmd)
 
     let getPages (allPages: Pages) =

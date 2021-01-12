@@ -45,15 +45,7 @@ type SubBoard =
 
 type Board =
     { Winner: BoardWinner option
-      Size: int * int
       SubBoards: SubBoard [,] }
-    with 
-        member this.GetSubBoardIndex subBoard =
-            let index =
-                this.SubBoards
-                |> Seq.cast<SubBoard>
-                |> Seq.findIndex (fun sb -> sb = subBoard)
-            index / 3, index % 3
 
 type GameModel =
     { Players: Participant * Participant
@@ -72,7 +64,6 @@ type GameModel =
 
               let bigBoard =
                   { Board.Winner = None
-                    Size = (0, 0)
                     SubBoards = Array2D.init 3 3 (fun i j -> subBoard i j) }
 
               bigBoard
