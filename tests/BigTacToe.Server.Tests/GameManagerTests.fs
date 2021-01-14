@@ -76,7 +76,7 @@ module GameManagerTests =
             | Result.Error e -> failtestf "Join Private Game should have succeeded"
         }
 
-        Tests.test "Should be invalid game id when joining private non-existant game" {
+        Tests.test "Should be invalid game id when joining private non-existent game" {
             // Arrange
             let gm = Manager()
 
@@ -165,7 +165,7 @@ module GameManagerTests =
         }
 
         testList "Play Position tests" [
-            Tests.test "When playing position in a non-existant game, should be invalid game id" {
+            Tests.test "When playing position in a non-existent game, should be invalid game id" {
                 // Arrange
                 let gm = Manager()
 
