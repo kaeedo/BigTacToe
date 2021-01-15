@@ -5,14 +5,17 @@ open BigTacToe.Shared
 open System.Collections.Generic
 
 module GameManager =
+    type private IsPrivateGame = bool
+
     type private State =
         { OngoingGames: Map<GameId, GameModel>
-          PendingGames: Map<GameId, GameModel * bool> }
+          PendingGames: Map<GameId, GameModel * IsPrivateGame> }
 
     type GameError =
     | NoOngoingGames
     | InvalidGameId
     | InvalidMove
+    | InvalidGameState
 
     type private Message =
     | GetGame of GameId * AsyncReplyChannel<Result<GameId * GameModel, GameError>>
@@ -24,11 +27,10 @@ module GameManager =
     
     let private rnd = Random()
 
-    let private getOtherMeeple participant =
-        match participant with
-        | Missing -> raise (BicTacToeException(InvalidPlayer))
-        | Player (_, Meeple.Ex) -> Meeple.Oh
-        | Player (_, Meeple.Oh) -> Meeple.Ex
+    let private getOtherMeeple (participant: Participant) =
+        match participant.Meeple with
+        | Meeple.Ex -> Meeple.Oh
+        | Meeple.Oh -> Meeple.Ex
 
     let private idGenerator state =
         let rec newId id =
@@ -55,7 +57,11 @@ module GameManager =
                             
                             rc.Reply gameId
 
-                            let newGame = GameModel.init (Player (playerId, Meeple.Ex))
+                            let participant = { Participant.PlayerId = playerId; Meeple = Meeple.Ex }
+                            
+                            let newGame = GameModel.init participant
+                            let newGame = { newGame with Player1 = Some participant }
+
                             let pendingGames = state.PendingGames.Add (gameId, (newGame, false))
 
                             return! loop { state with PendingGames = pendingGames }
@@ -64,7 +70,10 @@ module GameManager =
                             
                             rc.Reply gameId
 
-                            let newGame = GameModel.init (Player (playerId, Meeple.Ex))
+                            let participant = { Participant.PlayerId = playerId; Meeple = Meeple.Ex }
+
+                            let newGame = GameModel.init participant
+                            let newGame = { newGame with Player1 = Some participant }
                             let pendingGames = state.PendingGames.Add (gameId, (newGame, true))
 
                             return! loop { state with PendingGames = pendingGames }
@@ -74,12 +83,7 @@ module GameManager =
                                 |> Seq.tryFind (fun kvp ->
                                     let (game, isPrivate) = kvp.Value
 
-                                    game.Players
-                                    |> snd
-                                    |> function
-                                        | Missing -> true
-                                        | _ -> false
-                                    |> (&&) (not isPrivate)
+                                    (not isPrivate) && game.Player2.IsNone
                                 )
 
                             match availableGame with
@@ -88,16 +92,21 @@ module GameManager =
                                 return! loop state
                             | Some kvp ->
                                 let (game, _) = kvp.Value
+                                let player1 = game.Player1
 
-                                let player1 = fst game.Players
-                                let newPlayers = player1, Player (playerId, getOtherMeeple player1)
-                                let newGm = { game with Players = newPlayers }
-                                let ongoingGames = state.OngoingGames.Add (kvp.Key, newGm)
-                                let pendingGames = state.PendingGames.Remove kvp.Key
+                                match player1 with
+                                | None -> 
+                                    rc.Reply (Result.Error InvalidGameState)
+                                    return! loop state
+                                | Some p ->
+                                    let player2 = { Participant.PlayerId = playerId; Meeple = getOtherMeeple p }
+                                    let newGm = { game with Player1 = player1; Player2 = Some player2 }
+                                    let ongoingGames = state.OngoingGames.Add (kvp.Key, newGm)
+                                    let pendingGames = state.PendingGames.Remove kvp.Key
 
-                                rc.Reply (Result.Ok kvp.Key)
+                                    rc.Reply (Result.Ok kvp.Key)
 
-                                return! loop { state with OngoingGames = ongoingGames; PendingGames = pendingGames }
+                                    return! loop { state with OngoingGames = ongoingGames; PendingGames = pendingGames }
                         | JoinPrivateGame (playerId, gameId, rc) ->
                             let game = state.PendingGames.TryFind gameId 
                             
@@ -107,17 +116,21 @@ module GameManager =
                                 return! loop state
                             | Some g ->
                                 let (game, _) = game.Value
-
-                                let player1 = fst game.Players
-                                let newPlayers = player1, Player (playerId, getOtherMeeple player1)
+                                let player1 = game.Player1
                                 
-                                let newGm = { game with Players = newPlayers }
-                                let ongoingGames = state.OngoingGames.Add (gameId, newGm)
-                                let pendingGames = state.PendingGames.Remove gameId
+                                match player1 with
+                                | None -> 
+                                    rc.Reply (Result.Error InvalidGameState)
+                                    return! loop state
+                                | Some p ->
+                                    let player2 = { Participant.PlayerId = playerId; Meeple = getOtherMeeple p }
+                                    let newGm = { game with Player1 = player1; Player2 = Some player2 }
+                                    let ongoingGames = state.OngoingGames.Add (gameId, newGm)
+                                    let pendingGames = state.PendingGames.Remove gameId
                                 
-                                rc.Reply (Result.Ok gameId)
+                                    rc.Reply (Result.Ok gameId)
 
-                                return! loop { state with OngoingGames = ongoingGames; PendingGames = pendingGames }
+                                    return! loop { state with OngoingGames = ongoingGames; PendingGames = pendingGames }
                         | PlayPosition (gameId, gameMove, rc) ->
                             let game = state.OngoingGames.TryFind gameId 
 
@@ -132,19 +145,16 @@ module GameManager =
                                 else
                                     let subBoards = GameRules.playPosition g gameMove.PositionPlayed
                                     let newGameModel = GameRules.updateModel g subBoards
-                                    printfn "%A" newGameModel
 
                                     rc.Reply (Result.Ok (newGameModel, gameMove))
 
                                     match newGameModel.Board.Winner with
                                     | Some w ->
-                                        printfn "Somebody won?"
                                         let ongoingGames = state.OngoingGames.Remove gameId
                                     
                                         return! loop { state with OngoingGames = ongoingGames }
                                     | None ->
                                         let ongoingGames = state.OngoingGames.Add (gameId, newGameModel)
-                                        printfn "%A" ongoingGames
                                         return! loop { state with OngoingGames = ongoingGames }
                     }
             

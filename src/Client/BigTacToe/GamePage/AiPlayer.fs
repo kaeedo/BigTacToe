@@ -2,7 +2,7 @@
 
 open BigTacToe.Shared
 
-module CpuPlayer =
+module AiPlayer =
     let private playOutGame model =
         let rec playOut (model: GameModel) =
             match model.Board.Winner with
@@ -67,7 +67,7 @@ module CpuPlayer =
                             |> Seq.countBy id
                             |> Seq.filter (fun (bw, _) -> 
                                 match bw with
-                                | Participant (Player (_, Meeple.Oh)) -> true
+                                | Participant p when p.Meeple = Meeple.Ex -> true
                                 | _ -> false
                             )
                             |> Seq.sortByDescending snd

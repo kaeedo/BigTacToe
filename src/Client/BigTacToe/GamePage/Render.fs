@@ -69,8 +69,8 @@ module internal Render =
         winner
         |> Option.iter (fun w ->
             match w with
-            | Participant (Player (_, m)) -> 
-                if m = Meeple.Ex 
+            | Participant p -> 
+                if p.Meeple = Meeple.Ex 
                 then drawEx Colors.gameWinner canvas rect 
                 else drawOh Colors.gameWinner canvas rect
             | Draw -> drawGameDraw canvas rect
@@ -179,10 +179,9 @@ module internal Render =
 
                 meeple
                 |> Option.iter (fun m ->
-                    match m with
-                    | Player (_, Meeple.Ex) -> drawEx Colors.meepleEx canvas tileRect
-                    | Player (_, Meeple.Oh) -> drawOh Colors.meepleOh canvas tileRect
-                    | Missing -> ()
+                    if m.Meeple = Meeple.Ex
+                    then drawEx Colors.meepleEx canvas tileRect
+                    else drawOh Colors.meepleOh canvas tileRect
                 )
             )
         )

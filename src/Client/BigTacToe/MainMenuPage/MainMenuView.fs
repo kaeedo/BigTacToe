@@ -8,14 +8,23 @@ open Fabulous
 type MainMenuModel =
     { Count: int }
 
+type Opponent =
+| Ai
+| HotSeat
+| Random
+| Private
+
 type MainMenuMsg =
 | Increment
 | Decrement
-| NavigateToGame
+| NavigateToAiGame
+| NavigateToHotSeatGame
+| NavigateToMatchmakingGame
+| NavigateToPrivateGame
 
 type MainMenuExternalMsg =
 | NoOp
-| NavigateToGame
+| NavigateToGame of Opponent
 
 [<RequireQualifiedAccess>]
 module internal MainMenu =
@@ -25,14 +34,17 @@ module internal MainMenu =
         match message with
         | Increment -> { model with Count = model.Count + 1 }, Cmd.none, MainMenuExternalMsg.NoOp
         | Decrement -> { model with Count = model.Count - 1 }, Cmd.none, MainMenuExternalMsg.NoOp
-        | MainMenuMsg.NavigateToGame -> model, Cmd.none, MainMenuExternalMsg.NavigateToGame
+        | MainMenuMsg.NavigateToAiGame -> model, Cmd.none, MainMenuExternalMsg.NavigateToGame Ai
+        | MainMenuMsg.NavigateToHotSeatGame -> model, Cmd.none, MainMenuExternalMsg.NavigateToGame HotSeat
+        | MainMenuMsg.NavigateToMatchmakingGame -> model, Cmd.none, MainMenuExternalMsg.NavigateToGame Random
+        | MainMenuMsg.NavigateToPrivateGame -> model, Cmd.none, MainMenuExternalMsg.NavigateToGame Private
 
     let view model dispatch =
         View.ContentPage
             (content =
                 View.Grid
-                    (rowdefs = [Absolute 50.0; Star; Absolute 50.0],
-                     coldefs = [Star],
+                    (rowdefs = [Absolute 50.0; Star; Absolute 50.0; Absolute 50.0],
+                     coldefs = [Star; Star],
                      padding = Thickness 20.0,
                      //ref = ViewRef<Stack>(), //model.GridLayout,
                      children = [
@@ -40,15 +52,30 @@ module internal MainMenu =
                             text = "Big Tac Toe", 
                             fontSize = FontSize.Size 36.0, 
                             horizontalTextAlignment = TextAlignment.Center
-                        )
+                        ).ColumnSpan(2)
                         View.Image(
                             source = Image.fromPath "placeholder.png",
                             aspect = Aspect.AspectFit
-                        ).Row(1)
+                        ).Row(1).ColumnSpan(2)
                         View.Button(
                             text = "Play vs. CPU",
-                            command = (fun () -> dispatch MainMenuMsg.NavigateToGame),
+                            command = (fun () -> dispatch MainMenuMsg.NavigateToAiGame),
                             cornerRadius = 10
                         ).Row(2)
+                        View.Button(
+                            text = "Pass the phone",
+                            command = (fun () -> dispatch MainMenuMsg.NavigateToHotSeatGame),
+                            cornerRadius = 10
+                        ).Row(2).Column(1)
+                        View.Button(
+                            text = "Find opponent",
+                            command = (fun () -> dispatch MainMenuMsg.NavigateToMatchmakingGame),
+                            cornerRadius = 10
+                        ).Row(3).Column(0)
+                        View.Button(
+                            text = "Play private match",
+                            command = (fun () -> dispatch MainMenuMsg.NavigateToPrivateGame),
+                            cornerRadius = 10
+                        ).Row(3).Column(1)
                      ]))
 

@@ -10,7 +10,7 @@ open BigTacToe.Shared.Railways
 module GameManagerTests =
     let private getGameInfo gameResult =
         match gameResult with
-        | Result.Error e -> failtestf "Failed with: %s. Should have been able to get game" (e.ToString())
+        | Result.Error e -> failtestf "Should have been able to get game, but failed with error: %A" e
         | Result.Ok gameInfo -> gameInfo
 
     let private emptyBoardWithTwoPlayers (gm: Manager) player1 player2 =
@@ -73,7 +73,7 @@ module GameManagerTests =
             // Assert
             match joinPrivateGameResult with
             | Result.Ok gameId -> test <@ gameId = startedGameId @>
-            | Result.Error e -> failtestf "Join Private Game should have succeeded"
+            | Result.Error e -> failtestf "Join Private Game should have succeeded, but failed with error: %A" e
         }
 
         Tests.test "Should be invalid game id when joining private non-existent game" {
@@ -115,7 +115,7 @@ module GameManagerTests =
             // Assume
             match joinGameIdResult with
             | Result.Ok joinedGameId -> test <@ startedGameId = joinedGameId @>
-            | Result.Error e -> failtestf "Join Game should have succeeded"
+            | Result.Error e -> failtestf "Join Game should have succeeded, but failed with error: %A" e
             
             // Act
             let secondJoinGameResult = gm.JoinRandomGame (Guid.NewGuid())
@@ -151,7 +151,7 @@ module GameManagerTests =
             // Assume
             match joinGameIdResult with
             | Result.Ok joinedGameId -> test <@ startedGameId = joinedGameId @>
-            | Result.Error e -> failtestf "Join Game should have succeeded"
+            | Result.Error e -> failtestf "Join Game should have succeeded, but failed with error: %A" e
 
             // Act
             let getGameResult = gm.GetGame startedGameId
@@ -160,8 +160,9 @@ module GameManagerTests =
             match getGameResult with
             | Result.Ok (gameId, model) ->
                 test <@ gameId = startedGameId @>
-                test <@ model.Players = ((Participant.Player (player1, Meeple.Ex)), (Participant.Player (player2, Meeple.Oh))) @>
-            | Result.Error e -> failtestf "Join Game should have succeeded"
+                test <@ model.Player1 = Some { Participant.PlayerId = player1; Meeple = Meeple.Ex } @>
+                test <@ model.Player2 = Some { Participant.PlayerId = player2; Meeple = Meeple.Oh } @>
+            | Result.Error e -> failtestf "Join Game should have succeeded, but failed with error: %A" e
         }
 
         testList "Play Position tests" [
@@ -170,7 +171,7 @@ module GameManagerTests =
                 let gm = Manager()
 
                 let gameMove = 
-                    { GameMove.Player = Participant.Player (Guid.NewGuid(), Meeple.Ex)
+                    { GameMove.Player = { Participant.PlayerId = Guid.NewGuid(); Meeple = Meeple.Ex }
                       PositionPlayed = (1, 1), (1, 1) }
 
                 // Act
@@ -185,7 +186,7 @@ module GameManagerTests =
                 let gm = Manager()
 
                 let player1 = Guid.NewGuid()
-                let participant1 = Participant.Player (player1, Meeple.Ex)
+                let participant1 = { Participant.PlayerId = player1; Meeple = Meeple.Ex }
 
                 let player2 = Guid.NewGuid()
                 
@@ -200,10 +201,10 @@ module GameManagerTests =
                 let gm = Manager()
 
                 let player1 = Guid.NewGuid()
-                let participant1 = Participant.Player (player1, Meeple.Ex)
+                let participant1 = { Participant.PlayerId = player1; Meeple = Meeple.Ex }
 
                 let player2 = Guid.NewGuid()
-                let participant2 = Participant.Player (player2, Meeple.Oh)
+                let participant2 = { Participant.PlayerId = player2; Meeple = Meeple.Oh }
                 
                 let (gameId, gameModel) = emptyBoardWithTwoPlayers gm player1 player2
 
@@ -226,14 +227,12 @@ module GameManagerTests =
                 let gm = Manager()
 
                 let player1 = Guid.NewGuid()
-                let participant1 = Participant.Player (player1, Meeple.Ex)
+                let participant1 = { Participant.PlayerId = player1; Meeple = Meeple.Ex }
 
                 let player2 = Guid.NewGuid()
-                let participant2 = Participant.Player (player2, Meeple.Oh)
+                let participant2 = { Participant.PlayerId = player2; Meeple = Meeple.Oh }
                 
                 let (gameId, _) = emptyBoardWithTwoPlayers gm player1 player2
-
-                printfn "%A" gameId
 
                 // Act1
                 let positionPlayed = 
@@ -254,7 +253,7 @@ module GameManagerTests =
                 // Assert2
                 match playResult with
                 | Result.Ok (gameModel, gameMove) -> test <@ gameModel.CurrentPlayer = participant1 @>
-                | Result.Error e -> failtestf "Failed with: %s. Player 2 should have been able to play" (e.ToString())
+                | Result.Error e -> failtestf "Player 2 should have been able to play, but failed with error: %A" e
             }
         ]
     ]

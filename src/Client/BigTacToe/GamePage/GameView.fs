@@ -55,9 +55,17 @@ module internal Game =
                             padding = Thickness 20.0,
                             ref = ViewRef<Grid>(), //model.GridLayout,
                             children = [
-                            View.Label(text = gameStatus, fontSize = FontSize.Size 24.0, horizontalTextAlignment = TextAlignment.Center)
-                            gameBoard.Row(1)
-                            View.Label(text = "AI thinking", horizontalTextAlignment = TextAlignment.Center).Row(2)
+                            match model.OpponentStatus with
+                            | LookingForGame ->
+                                View.Label(text = "Looking for game", fontSize = FontSize.Size 24.0, horizontalTextAlignment = TextAlignment.Center)
+                                View.StackLayout(
+                                    height = 30.0,
+                                    children = [View.ActivityIndicator(isRunning = true)]
+                                ).Row(1)
+                            //| Joined p
+                            | _ ->
+                                View.Label(text = gameStatus, fontSize = FontSize.Size 24.0, horizontalTextAlignment = TextAlignment.Center)
+                                gameBoard.Row(1)
                             ]))
 
         page

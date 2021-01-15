@@ -3,6 +3,8 @@
 open Fabulous
 open SkiaSharp
 open BigTacToe.Shared
+open BigTacToe.Shared.SignalRHub
+open Fable.SignalR.Elmish
 
 module internal Messages =
     let private calculateTileIndex (size: int * int) (point: SKPoint) =
@@ -19,11 +21,6 @@ module internal Messages =
 
         x, y
 
-    let private isMe (currentPlayer: Participant) =
-        match currentPlayer with
-        | Player (_, m) -> m = Meeple.Ex
-        | _ -> false
-
     let update msg (model: ClientGameModel) =
         let gm = model.GameModel
         match msg with
@@ -39,6 +36,34 @@ module internal Messages =
         //    if shouldStartNew
         //    then GameModel.init (), Cmd.none
         //    else model, Cmd.none
+        | ConnectToServer ->
+            let cmd = 
+                Cmd.SignalR.connect RegisterHub (fun hub ->
+                    hub.WithUrl(sprintf "http://127.0.0.1:5000%s" Endpoints.Root)
+                       .WithAutomaticReconnect()
+                       .UseMessagePack()
+                       .OnMessage SignalRMessage
+                )
+            model, cmd
+        | RegisterHub hub ->
+            let hub = Some hub
+
+            let playerId = model.GameModel.CurrentPlayer.PlayerId
+
+            let cmd =
+                match model.OpponentStatus with
+                | LookingForGame -> 
+                    Cmd.batch 
+                        [ Cmd.SignalR.send hub (Action.OnConnect playerId)
+                          Cmd.SignalR.send hub (Action.SearchOrCreateGame playerId) ] 
+                | _ -> Cmd.none // TODO: This
+
+            { model with Hub = hub }, cmd
+        | SignalRMessage response ->
+            match response with
+            | Response.GameStarted (gameId, participants) ->
+                model, Cmd.none
+            | _ -> model, Cmd.none // TODO: this
         | ResizeCanvas size ->
             let smallerDimension = if size.Width < size.Height then size.Width else size.Height
             //let board = { gm.Board with Board.Size = (smallerDimension, smallerDimension) }
@@ -48,7 +73,9 @@ module internal Messages =
             let subBoards = GameRules.playPosition gm positionPlayed
             let newGm = GameRules.updateModel gm subBoards
             { model with GameModel = newGm }, Cmd.none
-        | SKSurfaceTouched point when (isMe gm.CurrentPlayer) && gm.Board.Winner.IsNone -> 
+
+        // TODO: Figure out based on which meeple i'm supposed to be
+        | SKSurfaceTouched point when (gm.CurrentPlayer.Meeple = Meeple.Ex) && gm.Board.Winner.IsNone -> 
             let tileIndex = calculateTileIndex model.Size point
             
             match GameRules.updatedBoard gm tileIndex with
@@ -59,7 +86,7 @@ module internal Messages =
                 let command =
                     if newGm.Board.Winner.IsSome 
                     then Cmd.none
-                    else Cmd.ofAsyncMsg <| CpuPlayer.playPosition newGm
+                    else Cmd.ofAsyncMsg <| AiPlayer.playPosition newGm
 
                 ({ model with GameModel = newGm }, command)
         | _ -> (model, Cmd.none)

@@ -81,11 +81,11 @@ module GameRules =
             { sb with IsPlayable = isPlayable })
 
     let private togglePlayer (current: GameModel) =
-        let (player1, player2) = current.Players
+        // TODO: Handle none values
         
-        if current.CurrentPlayer = player1
-        then player2
-        else player1
+        if current.CurrentPlayer = current.Player1.Value
+        then current.Player2.Value
+        else current.Player1.Value
 
     let playPosition (model: GameModel) (positionPlayed: PositionPlayed) =
         let (sbi, sbj), (ti, tj) = positionPlayed

@@ -21,16 +21,25 @@ module private App =
         | MainMenuPageMsg of MainMenuMsg
         | GamePageMsg of GameMsg
 
-        | GoToGame
+        | GoToAiGame
+        | GoToHotSeatGame
+        | GoToMatchmakingGame
+        | GoToPrivateGame
+
         | GoToMainMenu
+
         | NavigationPopped
 
     let handleMainExternalMsg externalMsg =
         match externalMsg with
         | MainMenuExternalMsg.NoOp ->
             Cmd.none
-        | MainMenuExternalMsg.NavigateToGame ->
-            Cmd.ofMsg GoToGame
+        | MainMenuExternalMsg.NavigateToGame opponent ->
+            match opponent with
+            | Ai -> Cmd.ofMsg GoToAiGame
+            | HotSeat -> Cmd.ofMsg GoToHotSeatGame
+            | Random -> Cmd.ofMsg GoToMatchmakingGame
+            | Private -> Cmd.ofMsg GoToPrivateGame
 
     let handleGameExternalMsg externalMsg =
         match externalMsg with
@@ -70,13 +79,40 @@ module private App =
 
         | NavigationPopped ->
             navigationMapper model, Cmd.none
-        | GoToGame ->
-            let participant = Player (Guid.NewGuid(), Meeple.Ex) // Get this from "actual" player guid
-            let opponent = Player (Guid.NewGuid(), Meeple.Oh) // Only for single player
+        | GoToAiGame ->
+            let participant = { Participant.PlayerId = Guid.NewGuid(); Meeple = Meeple.Ex } // Get this from "actual" player guid
+            let opponent = { Participant.PlayerId = Guid.NewGuid(); Meeple = Meeple.Oh } // Only for single player
             let newGm = GameModel.init participant
-            let newGm = { newGm with Players = (participant, opponent) }
+            let newGm = { newGm with Player1 = Some participant; Player2 = Some opponent }
             let newGm, cmd = newGm, Cmd.none
-            let m = { Size = 100, 100; GameModel = newGm }
+            let m = { Size = 100, 100; GameModel = newGm; OpponentStatus = LocalAiGame; Hub = None }
+            { model with GamePageModel = Some m }, (Cmd.map GamePageMsg cmd)
+        | GoToHotSeatGame ->
+            // TODO: this
+            let participant = { Participant.PlayerId = Guid.NewGuid(); Meeple = Meeple.Ex } // Get this from "actual" player guid
+            let opponent = { Participant.PlayerId = Guid.NewGuid(); Meeple = Meeple.Oh } // Only for single player
+            let newGm = GameModel.init participant
+            let newGm = { newGm with Player1 = Some participant; Player2 = Some opponent }
+            let newGm, cmd = newGm, Cmd.none
+            let m = { Size = 100, 100; GameModel = newGm; OpponentStatus = LocalAiGame; Hub = None }
+            { model with GamePageModel = Some m }, (Cmd.map GamePageMsg cmd)
+        | GoToMatchmakingGame ->
+            let participant = { Participant.PlayerId = Guid.NewGuid(); Meeple = Meeple.Ex } // Get this from "actual" player guid
+
+            let newGm = GameModel.init participant
+            let newGm = { newGm with Player1 = Some participant }
+            let newGm, cmd = newGm, Cmd.ofMsg ConnectToServer
+            let m = { Size = 100, 100; GameModel = newGm; OpponentStatus = LookingForGame; Hub = None }
+            { model with GamePageModel = Some m }, (Cmd.map GamePageMsg cmd)
+
+        | GoToPrivateGame ->
+            // TODO: This
+            let participant = { Participant.PlayerId = Guid.NewGuid(); Meeple = Meeple.Ex } // Get this from "actual" player guid
+
+            let newGm = GameModel.init participant
+            let newGm = { newGm with Player1 = Some participant }
+            let newGm, cmd = newGm, Cmd.none
+            let m = { Size = 100, 100; GameModel = newGm; OpponentStatus = WaitingForPrivate -1; Hub = None }
             { model with GamePageModel = Some m }, (Cmd.map GamePageMsg cmd)
 
     let getPages (allPages: Pages) =

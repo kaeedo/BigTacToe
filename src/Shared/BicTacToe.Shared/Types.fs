@@ -11,18 +11,15 @@ type BicTacToeException(msg: BigTacToeExceptionMessage) =
 type Meeple =
 | Ex
 | Oh
-    with override this.ToString() =
+    with 
+        override this.ToString() =
             match this with
             | Ex -> "X"
             | Oh -> "O"
 
 type Participant = 
-| Player of Guid * Meeple
-| Missing
-    with override this.ToString() =
-            match this with
-            | Player (id, _) -> id.ToString()
-            | Missing -> "Player missing"
+    { PlayerId: Guid
+      Meeple: Meeple }
 
 type BoardWinner =
 | Participant of Participant
@@ -41,7 +38,8 @@ type Board =
       SubBoards: SubBoard [,] }
 
 type GameModel =
-    { Players: Participant * Participant
+    { Player1: Participant option
+      Player2: Participant option
       CurrentPlayer: Participant
       Board: Board }
     with
@@ -61,7 +59,8 @@ type GameModel =
 
               bigBoard
 
-          { GameModel.Players = (participant, Participant.Missing)
+          { GameModel.Player1 = None
+            Player2 = None
             CurrentPlayer = participant
             Board = initBoard }
 
@@ -86,7 +85,7 @@ module SignalRHub =
 
     [<RequireQualifiedAccess>]
     type Response =
-    | GameStarted of GameId * Meeple
+    | GameStarted of GameId * (Participant * Participant)
     | GameReady of GameId
     | MoveMade of GameMove // Maybe Result<_, isValid: bool>
     | GameFinished of Meeple
