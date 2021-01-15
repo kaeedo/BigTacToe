@@ -1,4 +1,4 @@
-﻿namespace BigTacToe.Wpf.WPF
+﻿namespace BigTacToe.Wpf
 
 open System
 

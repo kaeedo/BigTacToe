@@ -54,7 +54,7 @@ module internal MainMenu =
                             horizontalTextAlignment = TextAlignment.Center
                         ).ColumnSpan(2)
                         View.Image(
-                            source = Image.fromPath "placeholder.png",
+                            //source = Image.fromPath "placeholder.png",
                             aspect = Aspect.AspectFit
                         ).Row(1).ColumnSpan(2)
                         View.Button(
