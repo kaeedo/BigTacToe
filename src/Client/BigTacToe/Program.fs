@@ -83,7 +83,7 @@ module private App =
             let participant = { Participant.PlayerId = Guid.NewGuid(); Meeple = Meeple.Ex } // Get this from "actual" player guid
             let opponent = { Participant.PlayerId = Guid.NewGuid(); Meeple = Meeple.Oh } // Only for single player
             let newGm = GameModel.init participant
-            let newGm = { newGm with Player1 = Some participant; Player2 = Some opponent }
+            let newGm = { newGm with Players = TwoPlayers (participant, opponent) }
             let newGm, cmd = newGm, Cmd.none
             let m = { Size = 100, 100; GameModel = newGm; OpponentStatus = LocalAiGame; Hub = None }
             { model with GamePageModel = Some m }, (Cmd.map GamePageMsg cmd)
@@ -92,7 +92,7 @@ module private App =
             let participant = { Participant.PlayerId = Guid.NewGuid(); Meeple = Meeple.Ex } // Get this from "actual" player guid
             let opponent = { Participant.PlayerId = Guid.NewGuid(); Meeple = Meeple.Oh } // Only for single player
             let newGm = GameModel.init participant
-            let newGm = { newGm with Player1 = Some participant; Player2 = Some opponent }
+            let newGm = { newGm with Players = TwoPlayers (participant, opponent) }
             let newGm, cmd = newGm, Cmd.none
             let m = { Size = 100, 100; GameModel = newGm; OpponentStatus = LocalAiGame; Hub = None }
             { model with GamePageModel = Some m }, (Cmd.map GamePageMsg cmd)
@@ -100,7 +100,7 @@ module private App =
             let participant = { Participant.PlayerId = Guid.NewGuid(); Meeple = Meeple.Ex } // Get this from "actual" player guid
 
             let newGm = GameModel.init participant
-            let newGm = { newGm with Player1 = Some participant }
+            let newGm = { newGm with Players = OnePlayer participant }
             let newGm, cmd = newGm, Cmd.ofMsg ConnectToServer
             let m = { Size = 100, 100; GameModel = newGm; OpponentStatus = LookingForGame; Hub = None }
             { model with GamePageModel = Some m }, (Cmd.map GamePageMsg cmd)
@@ -110,7 +110,7 @@ module private App =
             let participant = { Participant.PlayerId = Guid.NewGuid(); Meeple = Meeple.Ex } // Get this from "actual" player guid
 
             let newGm = GameModel.init participant
-            let newGm = { newGm with Player1 = Some participant }
+            let newGm = { newGm with Players = OnePlayer participant }
             let newGm, cmd = newGm, Cmd.none
             let m = { Size = 100, 100; GameModel = newGm; OpponentStatus = WaitingForPrivate -1; Hub = None }
             { model with GamePageModel = Some m }, (Cmd.map GamePageMsg cmd)

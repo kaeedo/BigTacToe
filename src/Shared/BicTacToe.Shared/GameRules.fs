@@ -82,10 +82,12 @@ module GameRules =
 
     let private togglePlayer (current: GameModel) =
         // TODO: Handle none values
-        
-        if current.CurrentPlayer = current.Player1.Value
-        then current.Player2.Value
-        else current.Player1.Value
+        match current.Players with
+        | TwoPlayers (p1, p2) ->
+            if current.CurrentPlayer = p1
+            then p2
+            else p1
+        | _ -> raise <| BicTacToeException(InvalidGameState)
 
     let playPosition (model: GameModel) (positionPlayed: PositionPlayed) =
         let (sbi, sbj), (ti, tj) = positionPlayed

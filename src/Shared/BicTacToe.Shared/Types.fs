@@ -4,6 +4,7 @@ open System
 
 type BigTacToeExceptionMessage =
 | InvalidPlayer
+| InvalidGameState
 
 type BicTacToeException(msg: BigTacToeExceptionMessage) =
     inherit Exception(msg.ToString())
@@ -37,9 +38,13 @@ type Board =
     { Winner: BoardWinner option
       SubBoards: SubBoard [,] }
 
+type Players =
+| NoOne
+| OnePlayer of Participant
+| TwoPlayers of Participant * Participant
+
 type GameModel =
-    { Player1: Participant option
-      Player2: Participant option
+    { Players: Players
       CurrentPlayer: Participant
       Board: Board }
     with
@@ -59,8 +64,7 @@ type GameModel =
 
               bigBoard
 
-          { GameModel.Player1 = None
-            Player2 = None
+          { GameModel.Players = NoOne
             CurrentPlayer = participant
             Board = initBoard }
 

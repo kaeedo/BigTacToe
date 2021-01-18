@@ -160,8 +160,7 @@ module GameManagerTests =
             match getGameResult with
             | Result.Ok (gameId, model) ->
                 test <@ gameId = startedGameId @>
-                test <@ model.Player1 = Some { Participant.PlayerId = player1; Meeple = Meeple.Ex } @>
-                test <@ model.Player2 = Some { Participant.PlayerId = player2; Meeple = Meeple.Oh } @>
+                test <@ model.Players = TwoPlayers ({ Participant.PlayerId = player1; Meeple = Meeple.Ex }, { Participant.PlayerId = player2; Meeple = Meeple.Oh }) @>
             | Result.Error e -> failtestf "Join Game should have succeeded, but failed with error: %A" e
         }
 

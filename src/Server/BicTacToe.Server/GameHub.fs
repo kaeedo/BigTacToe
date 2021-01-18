@@ -31,39 +31,24 @@ module GameHub =
 
             match tryGetGame playerId with
             | Ok (gameId, game) ->
-                maybe {
-                    let! player1 = game.Player1
-                    let! player2 = game.Player2
-
-                    return
-                        Task.WhenAll(hubContext.Clients.Group(player1.PlayerId.ToString()).Send(Response.GameStarted (gameId, (player1, player2))), 
-                                        hubContext.Clients.Group(player2.PlayerId.ToString()).Send(Response.GameStarted (gameId, (player1, player2))))
-                }
-                |> function
-                | Some t -> t
-                | None -> Task.FromResult(()) :> Task // TODO: FIX THIS
+                match game.Players with
+                | TwoPlayers (player1, player2) ->
+                    Task.WhenAll(hubContext.Clients.Group(player1.PlayerId.ToString()).Send(Response.GameStarted (gameId, (player1, player2))), 
+                                 hubContext.Clients.Group(player2.PlayerId.ToString()).Send(Response.GameStarted (gameId, (player1, player2))))
+                | _ -> Task.FromResult(()) :> Task // TODO: FIX THIS
             | Error NoOngoingGames -> 
                 let newGameId = manager.StartGame playerId
                 hubContext.Clients.Group(playerId.ToString()).Send(Response.GameReady newGameId)
             | Error _ -> Task.FromResult(()) :> Task // TODO: FIX THIS
-            
-
         | Action.MakeMove (gameId, gameMove) ->
             match manager.PlayPosition gameId gameMove with
             | Error e -> Task.FromResult(()) :> Task // TODO: FIX THIS
             | Ok (game, gameMove) ->
-                maybe {
-                    let! player1 = game.Player1
-                    let! player2 = game.Player2
-
-                    return 
-                        Task.WhenAll(hubContext.Clients.Group(player1.PlayerId.ToString()).Send(Response.MoveMade gameMove), 
-                                     hubContext.Clients.Group(player2.PlayerId.ToString()).Send(Response.MoveMade gameMove))
-                }
-                |> function
-                | Some t -> t
-                | None -> Task.FromResult(()) :> Task // TODO: FIX THIS
-
+                match game.Players with
+                | TwoPlayers (player1, player2) ->
+                    Task.WhenAll(hubContext.Clients.Group(player1.PlayerId.ToString()).Send(Response.MoveMade gameMove), 
+                                hubContext.Clients.Group(player2.PlayerId.ToString()).Send(Response.MoveMade gameMove))
+                | _ -> Task.FromResult(()) :> Task // TODO: FIX THIS
         | Action.HostPrivateGame playerId ->
             // send waiting for opponent
             let newGame = manager.StartGame playerId
@@ -75,17 +60,11 @@ module GameHub =
 
             match tryJoinGame gameId with
             | Ok (gameId, game) ->
-                maybe {
-                    let! player1 = game.Player1
-                    let! player2 = game.Player2
-
-                    return 
-                        Task.WhenAll(hubContext.Clients.Group(player1.ToString()).Send(Response.GameStarted (gameId, (player1, player2))), 
-                                     hubContext.Clients.Group(player2.ToString()).Send(Response.GameStarted (gameId, (player1, player2))))
-                }
-                |> function
-                | Some t -> t
-                | None -> Task.FromResult(()) :> Task // TODO: FIX THIS
+                match game.Players with
+                | TwoPlayers (player1, player2) ->
+                    Task.WhenAll(hubContext.Clients.Group(player1.ToString()).Send(Response.GameStarted (gameId, (player1, player2))), 
+                                 hubContext.Clients.Group(player2.ToString()).Send(Response.GameStarted (gameId, (player1, player2))))
+                | _ -> Task.FromResult(()) :> Task // TODO: FIX THIS
             | Error _ -> Task.FromResult(()) :> Task // TODO: FIX THIS
         
     let private config =
