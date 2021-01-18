@@ -16,12 +16,15 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="FSharp.Core" Version="5.0.0" />
-    <PackageReference Include="Xamarin.Forms.Platform.WPF" Version="4.8.0.1687" />
-    <PackageReference Include="Fabulous.XamarinForms.LiveUpdate" Version="0.60.0" />
-    <PackageReference Include="Fabulous.XamarinForms.SkiaSharp" Version="0.60.0" />
+    <PackageReference Include="Xamarin.Forms.Platform.WPF" Version="5.0.0.1874" />
+    <PackageReference Include="Fabulous.XamarinForms.LiveUpdate" Version="0.61.0" />
+    <PackageReference Include="Fabulous.XamarinForms.SkiaSharp" Version="0.61.0" />
     <PackageReference Include="SkiaSharp.Views.Forms.WPF" Version="2.80.2" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\BigTacToe\BigTacToe.fsproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Update="System.ValueTuple" Version="4.5.0" />
   </ItemGroup>
 </Project>
