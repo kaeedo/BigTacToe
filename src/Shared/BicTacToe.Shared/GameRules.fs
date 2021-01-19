@@ -89,14 +89,7 @@ module GameRules =
             else p1
         | _ -> raise <| BicTacToeException(InvalidGameState)
 
-    let playPosition (model: GameModel) (positionPlayed: PositionPlayed) =
-        let (sbi, sbj), (ti, tj) = positionPlayed
-        let subBoard = model.Board.SubBoards.[sbi, sbj]
-        let tile = subBoard.Tiles.[ti, tj]
-
-        newBoard model subBoard tile
-
-    let updatedBoard model (tileIndex: int * int) =
+    let tryPlayPosition model (tileIndex: int * int) =
         let (tileIndexI, tileIndexJ) = tileIndex
 
         let subBoardIndexI = tileIndexI / 3

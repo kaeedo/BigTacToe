@@ -139,23 +139,38 @@ module GameManager =
                                 rc.Reply (Result.Error InvalidGameId)
                                 return! loop state
                             | Some g ->
-                                if g.CurrentPlayer <> gameMove.Player
-                                then 
-                                    rc.Reply (Result.Error InvalidMove)
-                                else
-                                    let subBoards = GameRules.playPosition g gameMove.PositionPlayed
-                                    let newGameModel = GameRules.updateModel g subBoards
+                                let tileIndex = 
+                                    let (sbi, sbj) = fst gameMove.PositionPlayed
+                                    let (ti, tj) = snd gameMove.PositionPlayed
+                                    (ti + (sbi * 3)), (tj + (sbj * 3))
 
-                                    rc.Reply (Result.Ok (newGameModel, gameMove))
+                                let played =
+                                    maybe {
+                                        let! subBoards = GameRules.tryPlayPosition g tileIndex
+                                        let! _ = 
+                                            if g.CurrentPlayer <> gameMove.Player 
+                                            then None 
+                                            else Some g.CurrentPlayer
 
-                                    match newGameModel.Board.Winner with
-                                    | Some w ->
-                                        let ongoingGames = state.OngoingGames.Remove gameId
+                                        let newGameModel = GameRules.updateModel g subBoards
                                     
-                                        return! loop { state with OngoingGames = ongoingGames }
-                                    | None ->
-                                        let ongoingGames = state.OngoingGames.Add (gameId, newGameModel)
-                                        return! loop { state with OngoingGames = ongoingGames }
+                                        rc.Reply (Result.Ok (newGameModel, gameMove))
+
+                                        match newGameModel.Board.Winner with
+                                        | Some w ->
+                                            let ongoingGames = state.OngoingGames.Remove gameId
+
+                                            return ongoingGames                            
+                                        | None ->
+                                            let ongoingGames = state.OngoingGames.Add (gameId, newGameModel)
+                                            return ongoingGames
+                                    }
+                                match played with
+                                | Some ongoingGames ->
+                                    return! loop { state with OngoingGames = ongoingGames }
+                                | None ->
+                                    rc.Reply (Result.Error InvalidMove)
+                                    return! loop state
                     }
             
                 loop({ State.OngoingGames = Map.empty; PendingGames = Map.empty })

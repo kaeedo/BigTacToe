@@ -6,6 +6,7 @@ open BigTacToe.Server.GameManager
 open System
 open BigTacToe.Shared
 open BigTacToe.Shared.Railways
+open BigTacToe.Server
 
 module GameManagerTests =
     let private getGameInfo gameResult =
@@ -165,6 +166,22 @@ module GameManagerTests =
         }
 
         testList "Play Position tests" [
+            let getGamemodelForPositionPlayed (gm: Manager) gameId participant1 participant2 i p =
+                let participant = if i % 2 = 0 then participant1 else participant2
+                let positionPlayed = 
+                    { GameMove.Player = participant
+                      PositionPlayed = p }
+
+                let (gameModel, _) = gm.PlayPosition gameId positionPlayed |> getGameInfo
+
+                test <@ not (gameModel.CurrentPlayer = participant) @>
+                
+                let (sbi, sbj) = snd p
+                let sb = gameModel.Board.SubBoards.[sbi, sbj]
+                test <@ (sb.Winner.IsNone && sb.IsPlayable) || (sb.Winner.IsSome && not sb.IsPlayable) @>
+
+                gameModel
+
             Tests.test "When playing position in a non-existent game, should be invalid game id" {
                 // Arrange
                 let gm = Manager()
@@ -221,6 +238,8 @@ module GameManagerTests =
                 test <@ gameModel.CurrentPlayer = participant2 @>
             }
 
+            
+
             Tests.test "When player1 and player2 play valid moves, current player should be player1" {
                 // Arrange
                 let gm = Manager()
@@ -253,6 +272,180 @@ module GameManagerTests =
                 match playResult with
                 | Result.Ok (gameModel, gameMove) -> test <@ gameModel.CurrentPlayer = participant1 @>
                 | Result.Error e -> failtestf "Player 2 should have been able to play, but failed with error: %A" e
+            }
+
+            Tests.test "When a player plays invalid subBoard, should return error" {
+                // Arrange
+                let gm = Manager()
+
+                let player1 = Guid.NewGuid()
+                let participant1 = { Participant.PlayerId = player1; Meeple = Meeple.Ex }
+
+                let player2 = Guid.NewGuid()
+                let participant2 = { Participant.PlayerId = player2; Meeple = Meeple.Oh }
+                
+                let (gameId, _) = emptyBoardWithTwoPlayers gm player1 player2
+
+                // Act
+                let positionPlayed = 
+                    { GameMove.Player = participant1
+                      PositionPlayed = (0, 0), (1, 1) }
+
+                let _ = gm.PlayPosition gameId positionPlayed
+
+                let positionPlayed = 
+                    { GameMove.Player = participant2
+                      PositionPlayed = (2, 2), (0, 0) }
+
+                let playResult = gm.PlayPosition gameId positionPlayed 
+                
+                // Assert
+                match playResult with
+                | Result.Error e -> test <@ e = GameError.InvalidMove @>
+                | _ -> failwith "Move should have been invalid"
+            }
+
+            Tests.test "When a player plays invalid tile, should return error" {
+                // Arrange
+                let gm = Manager()
+
+                let player1 = Guid.NewGuid()
+                let participant1 = { Participant.PlayerId = player1; Meeple = Meeple.Ex }
+
+                let player2 = Guid.NewGuid()
+                let participant2 = { Participant.PlayerId = player2; Meeple = Meeple.Oh }
+                
+                let (gameId, _) = emptyBoardWithTwoPlayers gm player1 player2
+
+                // Act
+                let positionPlayed = 
+                    { GameMove.Player = participant1
+                      PositionPlayed = (0, 0), (1, 1) }
+
+                let _ = gm.PlayPosition gameId positionPlayed
+
+                let positionPlayed = 
+                    { GameMove.Player = participant2
+                      PositionPlayed = (1, 1), (0, 0) }
+
+                let _ = gm.PlayPosition gameId positionPlayed 
+
+                let positionPlayed = 
+                    { GameMove.Player = participant1
+                      PositionPlayed = (0, 0), (1, 1) }
+
+                let playResult = gm.PlayPosition gameId positionPlayed 
+
+                // Assert
+                match playResult with
+                | Result.Error e -> test <@ e = GameError.InvalidMove @>
+                | _ -> failwith "Move should have been invalid"
+            }
+
+            Tests.test "When play continues until one subboard is won, that subboard should be won" {
+                // Arrange
+                let gm = Manager()
+
+                let player1 = Guid.NewGuid()
+                let participant1 = { Participant.PlayerId = player1; Meeple = Meeple.Ex }
+
+                let player2 = Guid.NewGuid()
+                let participant2 = { Participant.PlayerId = player2; Meeple = Meeple.Oh }
+                
+                let (gameId, _) = emptyBoardWithTwoPlayers gm player1 player2
+
+                // Act
+                let plays =
+                    [ (0, 0), (1, 1)
+                      (1, 1), (0, 0)
+                      (0, 0), (2, 2)
+                      (2, 2), (0, 0)
+                      (0, 0), (0, 0) ]
+
+                let finalGameModel =
+                    plays
+                    |> List.mapi (getGamemodelForPositionPlayed gm gameId participant1 participant2)
+                    |> List.last
+
+                // Assert
+                test <@ finalGameModel.Board.SubBoards.[0, 0].Winner = (Some <| Participant participant1) @>
+            }
+
+            Tests.test "When play continues until one subboard is won, when play goes into that subboard, should be a free move" {
+                // Arrange
+                let gm = Manager()
+
+                let player1 = Guid.NewGuid()
+                let participant1 = { Participant.PlayerId = player1; Meeple = Meeple.Ex }
+
+                let player2 = Guid.NewGuid()
+                let participant2 = { Participant.PlayerId = player2; Meeple = Meeple.Oh }
+                
+                let (gameId, _) = emptyBoardWithTwoPlayers gm player1 player2
+
+                // Act
+                let plays =
+                    [ (0, 0), (1, 1)
+                      (1, 1), (0, 0)
+                      (0, 0), (2, 2)
+                      (2, 2), (0, 0)
+                      (0, 0), (0, 0) ]
+
+                let finalGameModel =
+                    plays
+                    |> List.mapi (getGamemodelForPositionPlayed gm gameId participant1 participant2)
+                    |> List.last
+
+                // Assert
+                test <@ 
+                        (finalGameModel.Board.SubBoards
+                         |> Seq.cast<SubBoard>
+                         |> Seq.filter (fun sb -> sb.IsPlayable)
+                         |> Seq.length) = 8 @>
+            }
+
+            Tests.test "When playing until someone wins, game should end" {
+                // Arrange
+                let gm = Manager()
+
+                let player1 = Guid.NewGuid()
+                let participant1 = { Participant.PlayerId = player1; Meeple = Meeple.Ex }
+
+                let player2 = Guid.NewGuid()
+                let participant2 = { Participant.PlayerId = player2; Meeple = Meeple.Oh }
+                
+                let (gameId, _) = emptyBoardWithTwoPlayers gm player1 player2
+
+                // Act
+                let plays =
+                    [ (0, 0), (1, 1) //
+                      (1, 1), (0, 0)
+                      (0, 0), (2, 2) //
+                      (2, 2), (0, 0)
+                      (0, 0), (0, 0) //
+
+                      (1, 0), (1, 1)
+                      (1, 1), (1, 1) //
+                      (1, 1), (2, 2)
+                      (2, 2), (1, 0) //
+                      (1, 0), (0, 0)
+                      (1, 1), (0, 1) //
+                      (0, 1), (1, 1)
+                      (1, 1), (2, 1) //
+
+                      (2, 1), (2, 2)
+                      (2, 2), (1, 1) //
+                      (0, 2), (1, 1)
+                      (2, 2), (1, 2) ]
+                      
+
+                let finalGameModel =
+                    plays
+                    |> List.mapi (getGamemodelForPositionPlayed gm gameId participant1 participant2)
+                    |> List.last
+
+                // Assert
+                test <@ finalGameModel.Board.Winner = Some (Participant participant1) @>
             }
         ]
     ]

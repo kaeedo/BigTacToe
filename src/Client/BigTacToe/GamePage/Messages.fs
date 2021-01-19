@@ -70,15 +70,24 @@ module internal Messages =
             //let newGm = { gm with Board = board }
             { model with Size = (smallerDimension, smallerDimension) }, Cmd.none
         | OpponentPlayed positionPlayed ->
-            let subBoards = GameRules.playPosition gm positionPlayed
-            let newGm = GameRules.updateModel gm subBoards
-            { model with GameModel = newGm }, Cmd.none
+            let tileIndex = 
+                let (sbi, sbj) = fst positionPlayed
+                let (ti, tj) = snd positionPlayed
+                (ti + (sbi * 3)), (tj + (sbj * 3))
+            
+            let subBoards = GameRules.tryPlayPosition gm tileIndex
+
+            match subBoards with
+            | Some sb ->
+                let newGm = GameRules.updateModel gm sb
+                { model with GameModel = newGm }, Cmd.none
+            | None -> model, Cmd.none // TODO: FIX THIS
 
         // TODO: Figure out based on which meeple i'm supposed to be
         | SKSurfaceTouched point when (gm.CurrentPlayer.Meeple = Meeple.Ex) && gm.Board.Winner.IsNone -> 
             let tileIndex = calculateTileIndex model.Size point
             
-            match GameRules.updatedBoard gm tileIndex with
+            match GameRules.tryPlayPosition gm tileIndex with
             | None -> (model, Cmd.none)
             | Some subBoard ->
                 let newGm = GameRules.updateModel gm subBoard

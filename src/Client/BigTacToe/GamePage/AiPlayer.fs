@@ -24,7 +24,10 @@ module AiPlayer =
                 
                 let (ti, tj) = model.Board.SubBoards.[sbi, sbj].Tiles |> Array2D.findIndex tile
 
-                let subBoards = GameRules.playPosition model ((sbi, sbj), (ti, tj))
+                let tileIndex = (ti + (sbi * 3)), (tj + (sbj * 3))
+
+                // TODO: Hopefully with more better AI this won't be needed
+                let (Some subBoards) = GameRules.tryPlayPosition model tileIndex
 
                 playOut <| GameRules.updateModel model subBoards
 
@@ -52,7 +55,12 @@ module AiPlayer =
                     
                         let (ti, tj) = model.Board.SubBoards.[sbi, sbj].Tiles |> Array2D.findIndex tile
 
-                        let subBoards = GameRules.playPosition model ((sbi, sbj), (ti, tj))
+                        let tileIndex = (ti + (sbi * 3)), (tj + (sbj * 3))
+                        
+                        // TODO: Hopefully with more better AI this won't be needed
+                        let (Some subBoards) = GameRules.tryPlayPosition model tileIndex
+
+                        //let subBoards = GameRules.playPosition model ((sbi, sbj), (ti, tj))
                         let! bestPlay =
                             seq {
                                 for _ in 0..50 do
