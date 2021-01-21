@@ -62,7 +62,9 @@ module internal Game =
                                     height = 30.0,
                                     children = [View.ActivityIndicator(isRunning = true)]
                                 ).Row(1)
-                            //| Joined p
+                            | Joined p ->
+                                View.Label(text = sprintf "Me: %s VS Them: %s" (model.MyStatus.PlayerId.ToString().Substring(0, 6)) (p.PlayerId.ToString().Substring(0, 6)), fontSize = FontSize.Size 24.0, horizontalTextAlignment = TextAlignment.Center)
+                                gameBoard.Row(1)
                             | _ ->
                                 View.Label(text = gameStatus, fontSize = FontSize.Size 24.0, horizontalTextAlignment = TextAlignment.Center)
                                 gameBoard.Row(1)

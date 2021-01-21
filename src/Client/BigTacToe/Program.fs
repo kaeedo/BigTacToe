@@ -85,7 +85,7 @@ module private App =
             let newGm = GameModel.init participant
             let newGm = { newGm with Players = TwoPlayers (participant, opponent) }
             let newGm, cmd = newGm, Cmd.none
-            let m = { Size = 100, 100; GameModel = newGm; OpponentStatus = LocalAiGame; Hub = None }
+            let m = { Size = 100, 100; GameModel = newGm; OpponentStatus = LocalAiGame; Hub = None; MyStatus = participant }
             { model with GamePageModel = Some m }, (Cmd.map GamePageMsg cmd)
         | GoToHotSeatGame ->
             // TODO: this
@@ -94,7 +94,7 @@ module private App =
             let newGm = GameModel.init participant
             let newGm = { newGm with Players = TwoPlayers (participant, opponent) }
             let newGm, cmd = newGm, Cmd.none
-            let m = { Size = 100, 100; GameModel = newGm; OpponentStatus = LocalAiGame; Hub = None }
+            let m = { Size = 100, 100; GameModel = newGm; OpponentStatus = LocalAiGame; Hub = None; MyStatus = participant }
             { model with GamePageModel = Some m }, (Cmd.map GamePageMsg cmd)
         | GoToMatchmakingGame ->
             let participant = { Participant.PlayerId = Guid.NewGuid(); Meeple = Meeple.Ex } // Get this from "actual" player guid
@@ -102,7 +102,7 @@ module private App =
             let newGm = GameModel.init participant
             let newGm = { newGm with Players = OnePlayer participant }
             let newGm, cmd = newGm, Cmd.ofMsg ConnectToServer
-            let m = { Size = 100, 100; GameModel = newGm; OpponentStatus = LookingForGame; Hub = None }
+            let m = { Size = 100, 100; GameModel = newGm; OpponentStatus = LookingForGame; Hub = None; MyStatus = participant }
             { model with GamePageModel = Some m }, (Cmd.map GamePageMsg cmd)
 
         | GoToPrivateGame ->
@@ -112,7 +112,7 @@ module private App =
             let newGm = GameModel.init participant
             let newGm = { newGm with Players = OnePlayer participant }
             let newGm, cmd = newGm, Cmd.none
-            let m = { Size = 100, 100; GameModel = newGm; OpponentStatus = WaitingForPrivate -1; Hub = None }
+            let m = { Size = 100, 100; GameModel = newGm; OpponentStatus = WaitingForPrivate -1; Hub = None; MyStatus = participant }
             { model with GamePageModel = Some m }, (Cmd.map GamePageMsg cmd)
 
     let getPages (allPages: Pages) =

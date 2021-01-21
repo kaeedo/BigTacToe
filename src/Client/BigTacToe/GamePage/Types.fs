@@ -15,6 +15,7 @@ type OpponentStatus =
 type ClientGameModel =
     { Size: int * int
       OpponentStatus: OpponentStatus
+      MyStatus: Participant
       Hub: Elmish.Hub<Action, Response> option
       GameModel: GameModel }
 

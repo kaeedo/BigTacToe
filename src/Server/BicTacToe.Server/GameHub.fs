@@ -23,7 +23,11 @@ module GameHub =
 
         match msg with
         | Action.OnConnect playerId ->
-            hubContext.Groups.AddToGroupAsync(hubContext.Context.ConnectionId, playerId.ToString())
+            printfn "%A has connected" playerId
+            task {
+                do! hubContext.Groups.AddToGroupAsync(hubContext.Context.ConnectionId, playerId.ToString())
+                do! hubContext.Clients.Group(playerId.ToString()).Send(Response.Connected)    
+            } :> Task
         | Action.SearchOrCreateGame playerId ->
             let tryGetGame = 
                 manager.JoinRandomGame
@@ -38,6 +42,7 @@ module GameHub =
                 | _ -> Task.FromResult(()) :> Task // TODO: FIX THIS
             | Error NoOngoingGames -> 
                 let newGameId = manager.StartGame playerId
+                printfn "started new game with id: {%i} for player %A" newGameId playerId
                 hubContext.Clients.Group(playerId.ToString()).Send(Response.GameReady newGameId)
             | Error _ -> Task.FromResult(()) :> Task // TODO: FIX THIS
         | Action.MakeMove (gameId, gameMove) ->
@@ -47,7 +52,7 @@ module GameHub =
                 match game.Players with
                 | TwoPlayers (player1, player2) ->
                     Task.WhenAll(hubContext.Clients.Group(player1.PlayerId.ToString()).Send(Response.MoveMade gameMove), 
-                                hubContext.Clients.Group(player2.PlayerId.ToString()).Send(Response.MoveMade gameMove))
+                                 hubContext.Clients.Group(player2.PlayerId.ToString()).Send(Response.MoveMade gameMove))
                 | _ -> Task.FromResult(()) :> Task // TODO: FIX THIS
         | Action.HostPrivateGame playerId ->
             // send waiting for opponent
@@ -68,7 +73,7 @@ module GameHub =
             | Error _ -> Task.FromResult(()) :> Task // TODO: FIX THIS
         
     let private config =
-        { SignalR.Config.Default<_, _>()
+        { SignalR.Config.Default<Action, Response>()
             with 
                 UseMessagePack = true
                 OnConnected = None

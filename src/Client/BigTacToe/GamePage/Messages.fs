@@ -52,22 +52,15 @@ module internal Messages =
 
             let cmd =
                 match model.OpponentStatus with
-                | LookingForGame -> 
-                    Cmd.batch 
-                        [ Cmd.SignalR.send hub (Action.OnConnect playerId)
-                          Cmd.SignalR.send hub (Action.SearchOrCreateGame playerId) ] 
+                | LookingForGame ->
+                    Cmd.SignalR.send hub (Action.OnConnect playerId)
                 | _ -> Cmd.none // TODO: This
 
             { model with Hub = hub }, cmd
         | SignalRMessage response ->
-            match response with
-            | Response.GameStarted (gameId, participants) ->
-                model, Cmd.none
-            | _ -> model, Cmd.none // TODO: this
+            SignalRMessages.handleSignalRMessage model response
         | ResizeCanvas size ->
             let smallerDimension = if size.Width < size.Height then size.Width else size.Height
-            //let board = { gm.Board with Board.Size = (smallerDimension, smallerDimension) }
-            //let newGm = { gm with Board = board }
             { model with Size = (smallerDimension, smallerDimension) }, Cmd.none
         | OpponentPlayed positionPlayed ->
             let tileIndex = 

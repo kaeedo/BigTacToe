@@ -89,6 +89,7 @@ module SignalRHub =
 
     [<RequireQualifiedAccess>]
     type Response =
+    | Connected
     | GameStarted of GameId * (Participant * Participant)
     | GameReady of GameId
     | MoveMade of GameMove // Maybe Result<_, isValid: bool>
