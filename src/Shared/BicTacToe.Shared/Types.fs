@@ -68,7 +68,7 @@ type GameModel =
             CurrentPlayer = participant
             Board = initBoard }
 
-type PositionPlayed = (int * int) * (int * int)
+type PositionPlayed = (int * int) * (int * int) //SubBoard i,j Tile i,j
 
 type GameMove =
     { Player: Participant

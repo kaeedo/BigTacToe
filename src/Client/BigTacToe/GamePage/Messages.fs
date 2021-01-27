@@ -7,7 +7,7 @@ open BigTacToe.Shared.SignalRHub
 open Fable.SignalR.Elmish
 
 module internal Messages =
-    let private calculateTileIndex (size: int * int) (point: SKPoint) =
+    let private calculateGlobalTileIndex (size: int * int) (point: SKPoint) =
         let (sizeX, sizeY) = size
         let (pointX, pointY) = point.X, point.Y
 
@@ -76,19 +76,28 @@ module internal Messages =
                 { model with GameModel = newGm }, Cmd.none
             | None -> model, Cmd.none // TODO: FIX THIS
 
-        // TODO: Figure out based on which meeple i'm supposed to be
-        | SKSurfaceTouched point when (gm.CurrentPlayer.Meeple = Meeple.Ex) && gm.Board.Winner.IsNone -> 
-            let tileIndex = calculateTileIndex model.Size point
+        | SKSurfaceTouched point when (gm.CurrentPlayer.PlayerId = model.MyStatus.PlayerId) && gm.Board.Winner.IsNone -> 
+            let globalTileIndex = calculateGlobalTileIndex model.Size point
             
-            match GameRules.tryPlayPosition gm tileIndex with
+            let positionPlayed =
+                let (tileIndexI, tileIndexJ) = globalTileIndex
+
+                let subBoardIndexI = tileIndexI / 3
+                let subBoardIndexJ = tileIndexJ / 3
+                (subBoardIndexI, subBoardIndexJ), (tileIndexI % 3, tileIndexJ % 3)
+
+            let gameMove = { GameMove.Player = model.MyStatus; PositionPlayed = positionPlayed }
+            
+            match GameRules.tryPlayPosition gm globalTileIndex with
             | None -> (model, Cmd.none)
             | Some subBoard ->
                 let newGm = GameRules.updateModel gm subBoard
 
                 let command =
-                    if newGm.Board.Winner.IsSome 
-                    then Cmd.none
-                    else Cmd.ofAsyncMsg <| AiPlayer.playPosition newGm
+                    match model.OpponentStatus with
+                    | Joined _ -> Cmd.SignalR.send model.Hub (Action.MakeMove (model.GameId, gameMove))
+                    | LocalAiGame -> Cmd.ofAsyncMsg <| AiPlayer.playPosition newGm
+                    | _ -> Cmd.none
 
                 ({ model with GameModel = newGm }, command)
         | _ -> (model, Cmd.none)

@@ -21,6 +21,12 @@ module internal SignalRMessages =
                 if (fst participants).PlayerId = model.MyStatus.PlayerId
                 then snd participants
                 else fst participants
+                
+            let gameModel = { model.GameModel with Players = TwoPlayers (me, opponent) }
             
-            { model with OpponentStatus = Joined opponent; MyStatus = me }, Cmd.none
+            { model with GameId = gameId; OpponentStatus = Joined opponent; MyStatus = me; GameModel = gameModel }, Cmd.none
+        | Response.MoveMade gm ->
+            if gm.Player = model.MyStatus
+            then model, Cmd.none
+            else model, (Cmd.ofMsg (OpponentPlayed gm.PositionPlayed))
         | _ -> model, Cmd.none // TODO: this

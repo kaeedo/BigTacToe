@@ -41,11 +41,12 @@ module GameHub =
                                  hubContext.Clients.Group(player2.PlayerId.ToString()).Send(Response.GameStarted (gameId, (player1, player2))))
                 | _ -> Task.FromResult(()) :> Task // TODO: FIX THIS
             | Error NoOngoingGames -> 
-                let newGameId = manager.StartGame playerId
+                let newGameId = manager.StartGame playerId 
                 printfn "started new game with id: {%i} for player %A" newGameId playerId
                 hubContext.Clients.Group(playerId.ToString()).Send(Response.GameReady newGameId)
             | Error _ -> Task.FromResult(()) :> Task // TODO: FIX THIS
         | Action.MakeMove (gameId, gameMove) ->
+            printfn "Recevied make move: %A" (gameId, gameMove)
             match manager.PlayPosition gameId gameMove with
             | Error e -> Task.FromResult(()) :> Task // TODO: FIX THIS
             | Ok (game, gameMove) ->
