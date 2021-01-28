@@ -166,7 +166,7 @@ module GameManagerTests =
         }
 
         testList "Play Position tests" [
-            let getGamemodelForPositionPlayed (gm: Manager) gameId participant1 participant2 i p =
+            let getGameModelForPositionPlayed (gm: Manager) gameId participant1 participant2 i p =
                 let participant = if i % 2 = 0 then participant1 else participant2
                 let positionPlayed = 
                     { GameMove.Player = participant
@@ -364,7 +364,7 @@ module GameManagerTests =
 
                 let finalGameModel =
                     plays
-                    |> List.mapi (getGamemodelForPositionPlayed gm gameId participant1 participant2)
+                    |> List.mapi (getGameModelForPositionPlayed gm gameId participant1 participant2)
                     |> List.last
 
                 // Assert
@@ -393,7 +393,7 @@ module GameManagerTests =
 
                 let finalGameModel =
                     plays
-                    |> List.mapi (getGamemodelForPositionPlayed gm gameId participant1 participant2)
+                    |> List.mapi (getGameModelForPositionPlayed gm gameId participant1 participant2)
                     |> List.last
 
                 // Assert
@@ -441,7 +441,7 @@ module GameManagerTests =
 
                 let finalGameModel =
                     plays
-                    |> List.mapi (getGamemodelForPositionPlayed gm gameId participant1 participant2)
+                    |> List.mapi (getGameModelForPositionPlayed gm gameId participant1 participant2)
                     |> List.last
 
                 // Assert

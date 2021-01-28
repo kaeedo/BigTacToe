@@ -2,10 +2,6 @@
 
 open System
 
-module Map =
-    let Keys (m: Map<'Key, 'T>) =
-        Map.fold (fun keys key _ -> key :: keys) [] m
-
 type MaybeBuilder() =
     member this.Bind(m, f) = Option.bind f m
 
@@ -52,16 +48,3 @@ module Array2D =
             index / length, index % length
         else
             raise <| ArgumentException("Array must be square")
-
-    let inline replace<'a when 'a: equality> (itemToReplace: 'a) (newItem: 'a) (array: 'a [,]) =
-        let (i, j) = array |> findIndex itemToReplace
-        array.[i, j] <- newItem
-        array
-
-    let inline replaceWith<'a when 'a: equality> (itemToReplace: 'a) (buildNewItem: 'a -> 'a) (array: 'a [,]) =
-        try
-            let (i, j) = array |> findIndex itemToReplace
-            let newItem = buildNewItem array.[i, j]
-            array.[i, j] <- newItem
-            array
-        with _ -> array
