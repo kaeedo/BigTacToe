@@ -37,9 +37,13 @@ module GameRules =
             None
 
     let private newBoard model subBoard tile =
-        let (sbi, sbj) = model.Board.SubBoards |> Array2D.findIndex subBoard
+        let (sbi, sbj) =
+            model.Board.SubBoards
+            |> Array2D.findIndex subBoard
 
-        let (ti, tj) = model.Board.SubBoards.[sbi, sbj].Tiles |> Array2D.findIndex tile
+        let (ti, tj) =
+            model.Board.SubBoards.[sbi, sbj].Tiles
+            |> Array2D.findIndex tile
 
         let newTiles =
             subBoard.Tiles
@@ -62,6 +66,7 @@ module GameRules =
             match calculateBoardWinner meeples model.CurrentPlayer with
             | Some winner -> Some winner
             | None -> if isDraw newTiles then Some Draw else None
+
         let newBoard =
             model.Board.SubBoards
             |> Array2D.map (fun sb ->
@@ -76,52 +81,26 @@ module GameRules =
 
         newBoard
         |> Array2D.mapi (fun i j sb ->
-            let isPlayable = sb.Winner.IsNone && (freeMove || (i = ti && j = tj))
+            let isPlayable =
+                sb.Winner.IsNone
+                && (freeMove || (i = ti && j = tj))
 
             { sb with IsPlayable = isPlayable })
 
     let private togglePlayer (current: GameModel) =
         // TODO: Handle none values
         match current.Players with
-        | TwoPlayers (p1, p2) ->
-            if current.CurrentPlayer = p1
-            then p2
-            else p1
-        | _ -> raise <| BicTacToeException(InvalidGameState)
-
-    let tryPlayPosition model (tileIndex: int * int) =
-        let (tileIndexI, tileIndexJ) = tileIndex
-
-        let subBoardIndexI = tileIndexI / 3
-        let subBoardIndexJ = tileIndexJ / 3
-
-        maybe {
-            let! touchedSubBoard =
-                let sb = model.Board.SubBoards.[subBoardIndexI, subBoardIndexJ]
-                
-                match sb.IsPlayable && sb.Winner.IsNone with
-                | true -> Some sb
-                | false -> None
-
-            let! touchedSubTile =
-                touchedSubBoard.Tiles
-                |> Seq.cast<Tile>
-                |> Seq.filter (fun (_, meeple) -> meeple.IsNone)
-                |> Seq.tryFind (fun (ti, _) -> 
-                    ti = tileIndex
-                )
-
-            return newBoard model touchedSubBoard touchedSubTile
-        }
+        | TwoPlayers (p1, p2) -> if current.CurrentPlayer = p1 then p2 else p1
+        | _ -> raise <| BigTacToeException(InvalidGameState)
 
     let private calculateGameWinner (subBoard: SubBoard [,]) currentPlayer =
         let meeples =
             subBoard
             |> Array2D.map (fun sb ->
-                sb.Winner
-                |> Option.bind (function
-                    | Participant m -> Some m
-                    | _ -> None))
+                match sb.Winner with
+                | Some (Participant m) -> Some m
+                | Some Draw
+                | None -> None)
 
         let isDraw (subBoards: SubBoard [,]) =
             subBoards
@@ -132,10 +111,34 @@ module GameRules =
         | Some winner -> Some winner
         | None -> if isDraw subBoard then Some Draw else None
 
+    let tryPlayPosition model (tileIndex: int * int) =
+        let (tileIndexI, tileIndexJ) = tileIndex
+
+        let subBoardIndexI = tileIndexI / 3
+        let subBoardIndexJ = tileIndexJ / 3
+
+        maybe {
+            let! touchedSubBoard =
+                let sb =
+                    model.Board.SubBoards.[subBoardIndexI, subBoardIndexJ]
+
+                match sb.IsPlayable && sb.Winner.IsNone with
+                | true -> Some sb
+                | false -> None
+
+            let! touchedSubTile =
+                touchedSubBoard.Tiles
+                |> Seq.cast<Tile>
+                |> Seq.filter (fun (_, meeple) -> meeple.IsNone)
+                |> Seq.tryFind (fun (ti, _) -> ti = tileIndex)
+
+            return newBoard model touchedSubBoard touchedSubTile
+        }
+
     let updateModel model subBoards =
         { model with
-            Board =
-                { model.Board with
-                    SubBoards = subBoards
-                    Winner = calculateGameWinner subBoards model.CurrentPlayer }
-            CurrentPlayer = togglePlayer model }
+              Board =
+                  { model.Board with
+                        SubBoards = subBoards
+                        Winner = calculateGameWinner subBoards model.CurrentPlayer }
+              CurrentPlayer = togglePlayer model }

@@ -29,27 +29,26 @@ module Utilities =
     let maybe = MaybeBuilder()
 
     let takeRandomItem l =
-        l |> Seq.sortBy (fun _ -> Guid.NewGuid()) |> Seq.head
+        l
+        |> Seq.sortBy (fun _ -> Guid.NewGuid())
+        |> Seq.head
 
     let tryTakeRandomItem l =
-        l |> Seq.sortBy (fun _ -> Guid.NewGuid()) |> Seq.tryHead
-
-    /// Rect contains point
-    //let (<*) (rect: Rect) (point: Point) = 
-    //    let x, y = point
-    //    let left, top, right, bottom = rect
-    //    (x >= left) && (x < right) && (y >= top) && (y < bottom)
+        l
+        |> Seq.sortBy (fun _ -> Guid.NewGuid())
+        |> Seq.tryHead
 
 [<RequireQualifiedAccess>]
 module Array2D =
     let inline findIndex<'a when 'a: equality> (item: 'a) (array: 'a [,]) =
         let length = array |> Array2D.length1
-        if (length) = (array |> Array2D.length2)
-        then
+
+        if (length) = (array |> Array2D.length2) then
             let index =
                 array
                 |> Seq.cast<'a>
                 |> Seq.findIndex (fun a -> a = item)
+
             index / length, index % length
         else
             raise <| ArgumentException("Array must be square")
@@ -65,5 +64,4 @@ module Array2D =
             let newItem = buildNewItem array.[i, j]
             array.[i, j] <- newItem
             array
-        with
-        | _ -> array
+        with _ -> array
