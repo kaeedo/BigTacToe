@@ -10,9 +10,9 @@ module UtilitiesTests =
     let utilitiesTests = testList "Utilities Tests" [
         testList "Array2D extension tests" [
             Tests.test "Array2d find index" {
-                let array = Array2D.init 3 3 (fun i j -> i * 2, j * 2)
+                let array = Array2D.init 3 3 (fun i j -> i.ToString(), j.ToString())
                     
-                test <@ array |> Array2D.findIndex (2, 4) = (1, 2)  @>
+                test <@ array |> Array2D.findIndex ("1", "2") = (1, 2)  @>
             }
             
             Tests.test "Array2d find index should throw when 2D array is not square" {
