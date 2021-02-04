@@ -20,20 +20,25 @@ module AiPlayer =
                     |> Seq.filter (fun (_, meeple) -> meeple.IsNone)
                     |> takeRandomItem
 
-                let (sbi, sbj) = model.Board.SubBoards |> Array2D.findIndex subBoard
-                
-                let (ti, tj) = model.Board.SubBoards.[sbi, sbj].Tiles |> Array2D.findIndex tile
+                let (sbi, sbj) =
+                    model.Board.SubBoards
+                    |> Array2D.findIndex subBoard
+
+                let (ti, tj) =
+                    model.Board.SubBoards.[sbi, sbj].Tiles
+                    |> Array2D.findIndex tile
 
                 let tileIndex = (ti + (sbi * 3)), (tj + (sbj * 3))
 
                 // TODO: Hopefully with more better AI this won't be needed
-                let (Some subBoards) = GameRules.tryPlayPosition model tileIndex
+                let (Some subBoards) =
+                    GameRules.tryPlayPosition model tileIndex
 
                 playOut <| GameRules.updateModel model subBoards
 
         playOut model
 
-    let playPosition (model: GameModel) = 
+    let playPosition (model: GameModel) =
         async {
             let! possiblePlays =
                 model.Board.SubBoards
@@ -43,48 +48,51 @@ module AiPlayer =
                     psb.Tiles
                     |> Seq.cast<Tile>
                     |> Seq.filter (fun (_, meeple) -> meeple.IsNone)
-                    |> Seq.map (fun t ->
-                        psb, t
-                    )
-                )
+                    |> Seq.map (fun t -> psb, t))
                 |> Seq.concat
                 |> Seq.map (fun pp ->
                     async {
                         let (subBoard, tile) = pp
-                        let (sbi, sbj) = model.Board.SubBoards |> Array2D.findIndex subBoard
-                    
-                        let (ti, tj) = model.Board.SubBoards.[sbi, sbj].Tiles |> Array2D.findIndex tile
+
+                        let (sbi, sbj) =
+                            model.Board.SubBoards
+                            |> Array2D.findIndex subBoard
+
+                        let (ti, tj) =
+                            model.Board.SubBoards.[sbi, sbj].Tiles
+                            |> Array2D.findIndex tile
 
                         let tileIndex = (ti + (sbi * 3)), (tj + (sbj * 3))
-                        
+
                         // TODO: Hopefully with more better AI this won't be needed
-                        let (Some subBoards) = GameRules.tryPlayPosition model tileIndex
+                        let (Some subBoards) =
+                            GameRules.tryPlayPosition model tileIndex
 
                         //let subBoards = GameRules.playPosition model ((sbi, sbj), (ti, tj))
                         let! bestPlay =
                             seq {
-                                for _ in 0..50 do
+                                for _ in 0 .. 50 do
                                     async {
-                                        return playOutGame <| GameRules.updateModel model subBoards
+                                        return
+                                            playOutGame
+                                            <| GameRules.updateModel model subBoards
                                     }
                             }
                             |> Async.Parallel
-                            
+
                         let bestPlay =
                             bestPlay
                             |> Seq.countBy id
-                            |> Seq.filter (fun (bw, _) -> 
+                            |> Seq.filter (fun (bw, _) ->
                                 match bw with
                                 | Participant p when p.Meeple = Meeple.Ex -> true
-                                | _ -> false
-                            )
+                                | _ -> false)
                             |> Seq.sortByDescending snd
                             |> Seq.tryHead
                             |> Option.fold (fun _ bw -> snd bw) 0
 
                         return (pp, bestPlay)
-                    }
-                )
+                    })
                 |> Async.Parallel
 
             let possiblePlay =
@@ -93,10 +101,10 @@ module AiPlayer =
                 |> Seq.tryHead
                 |> Option.map fst
 
-            let (subBoard, tile) = 
+            let (subBoard, tile) =
                 match possiblePlay with
                 | Some cp -> cp
-                | None -> 
+                | None ->
                     let subBoard =
                         model.Board.SubBoards
                         |> Seq.cast<SubBoard>
@@ -110,10 +118,14 @@ module AiPlayer =
                         |> takeRandomItem
 
                     subBoard, tile
-                
-            let (sbi, sbj) = model.Board.SubBoards |> Array2D.findIndex subBoard
 
-            let (ti, tj) = model.Board.SubBoards.[sbi, sbj].Tiles |> Array2D.findIndex tile
+            let (sbi, sbj) =
+                model.Board.SubBoards
+                |> Array2D.findIndex subBoard
 
-            return OpponentPlayed ((sbi, sbj), (ti, tj))
+            let (ti, tj) =
+                model.Board.SubBoards.[sbi, sbj].Tiles
+                |> Array2D.findIndex tile
+
+            return OpponentPlayed((sbi, sbj), (ti, tj))
         }

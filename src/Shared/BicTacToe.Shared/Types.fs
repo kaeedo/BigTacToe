@@ -90,7 +90,7 @@ module SignalRHub =
         | GameStarted of GameId * (Participant * Participant)
         | GameReady of GameId
         | MoveMade of GameMove // Maybe Result<_, isValid: bool>
-        | GameFinished of Meeple
+        | GameFinished of BoardWinner
 
 [<RequireQualifiedAccess>]
 module Endpoints =

@@ -30,7 +30,7 @@ type GameMsg =
 
     | RegisterHub of Elmish.Hub<Action, Response>
     | SignalRMessage of Response
-    
+
     | GoToMainMenu
 
 type GameExternalMsg =

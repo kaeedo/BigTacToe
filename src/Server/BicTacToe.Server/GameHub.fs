@@ -15,7 +15,7 @@ open Fable.SignalR
 module GameHub =
     let private invoke (msg: Action) (hubContext: FableHub) =
         task {
-            return (Response.GameFinished Meeple.Ex)
+            return (Response.GameFinished BoardWinner.Draw)
         }
 
     let private send (msg: Action) (hubContext: FableHub<Action, Response>) =
@@ -46,14 +46,23 @@ module GameHub =
                 hubContext.Clients.Group(playerId.ToString()).Send(Response.GameReady newGameId)
             | Error _ -> Task.FromResult(()) :> Task // TODO: FIX THIS
         | Action.MakeMove (gameId, gameMove) ->
-            printfn "Recevied make move: %A" (gameId, gameMove)
+            printfn "Received make move: %A" (gameId, gameMove)
             match manager.PlayPosition gameId gameMove with
             | Error e -> Task.FromResult(()) :> Task // TODO: FIX THIS
             | Ok (game, gameMove) ->
                 match game.Players with
                 | TwoPlayers (player1, player2) ->
-                    Task.WhenAll(hubContext.Clients.Group(player1.PlayerId.ToString()).Send(Response.MoveMade gameMove), 
-                                 hubContext.Clients.Group(player2.PlayerId.ToString()).Send(Response.MoveMade gameMove))
+                    task {
+                        do! Task.WhenAll(hubContext.Clients.Group(player1.PlayerId.ToString()).Send(Response.MoveMade gameMove),
+                                         hubContext.Clients.Group(player2.PlayerId.ToString()).Send(Response.MoveMade gameMove))
+                        
+                        match game.Board.Winner with
+                        | Some w ->
+                            do! Task.WhenAll(hubContext.Clients.Group(player1.PlayerId.ToString()).Send(Response.GameFinished w),
+                                             hubContext.Clients.Group(player2.PlayerId.ToString()).Send(Response.GameFinished w))
+                        | None -> ()
+                    } :> Task
+                        
                 | _ -> Task.FromResult(()) :> Task // TODO: FIX THIS
         | Action.HostPrivateGame playerId ->
             // send waiting for opponent

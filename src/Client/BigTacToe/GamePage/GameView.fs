@@ -58,13 +58,21 @@ module internal Game =
                     (if model.GameModel.CurrentPlayer.PlayerId = model.MyStatus.PlayerId
                      then String.Empty
                      else " not")
-
-            [ View.Label(text = iAm, fontSize = FontSize.Size 24.0, horizontalTextAlignment = TextAlignment.Center)
-              View
-                  .Label(text = turnToPlay,
-                         fontSize = FontSize.Size 24.0,
-                         horizontalTextAlignment = TextAlignment.Center)
-                  .Row(1) ]
+                    
+            match model.GameModel.Board.Winner with
+            | Some (Participant p) ->
+                if p.PlayerId = model.MyStatus.PlayerId
+                then [ View.Label(text = "You Win!", fontSize = FontSize.Size 24.0, horizontalTextAlignment = TextAlignment.Center)  ]
+                else [ View.Label(text = "You Lose :(", fontSize = FontSize.Size 24.0, horizontalTextAlignment = TextAlignment.Center)  ]
+            | Some (Draw) ->
+                [ View.Label(text = "It's a tie game", fontSize = FontSize.Size 24.0, horizontalTextAlignment = TextAlignment.Center)  ]
+            | None ->
+                [ View.Label(text = iAm, fontSize = FontSize.Size 24.0, horizontalTextAlignment = TextAlignment.Center)
+                  View
+                      .Label(text = turnToPlay,
+                             fontSize = FontSize.Size 24.0,
+                             horizontalTextAlignment = TextAlignment.Center)
+                      .Row(1) ]
 
         let page =
             View.ContentPage
@@ -96,11 +104,12 @@ module internal Game =
 
                                    (View.FlexLayout
                                        (children =
-                                           [ View.Button(text = "Main Menu", command = fun () -> dispatch GoToMainMenu) ])).Row(3)
+                                           [ View.Button(text = "Main Menu", command = fun () -> dispatch GoToMainMenu) ]))
+                                       .Row(3)
                                | _ ->
                                    View
                                        .Label(text = gameStatus,
-                                              fontSize = FontSize.Size 16.0,
+                                              fontSize = FontSize.Size 24.0,
                                               horizontalTextAlignment = TextAlignment.Center)
                                        .RowSpan(2)
 

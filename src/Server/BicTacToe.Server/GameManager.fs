@@ -165,6 +165,7 @@ module GameManager =
                                             let ongoingGames = state.OngoingGames.Add (gameId, newGameModel)
                                             return ongoingGames
                                     }
+                                    
                                 match played with
                                 | Some ongoingGames ->
                                     return! loop { state with OngoingGames = ongoingGames }
