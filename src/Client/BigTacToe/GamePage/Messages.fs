@@ -44,7 +44,7 @@ module internal Messages =
                        .UseMessagePack()
                        .OnMessage SignalRMessage
                 )
-            model, cmd
+            model, cmd, GameExternalMsg.NoOp
         | RegisterHub hub ->
             let hub = Some hub
 
@@ -56,12 +56,12 @@ module internal Messages =
                     Cmd.SignalR.send hub (Action.OnConnect playerId)
                 | _ -> Cmd.none // TODO: This
 
-            { model with Hub = hub }, cmd
+            { model with Hub = hub }, cmd, GameExternalMsg.NoOp
         | SignalRMessage response ->
             SignalRMessages.handleSignalRMessage model response
         | ResizeCanvas size ->
             let smallerDimension = if size.Width < size.Height then size.Width else size.Height
-            { model with Size = (smallerDimension, smallerDimension) }, Cmd.none
+            { model with Size = (smallerDimension, smallerDimension) }, Cmd.none, GameExternalMsg.NoOp
         | OpponentPlayed positionPlayed ->
             let tileIndex = 
                 let (sbi, sbj) = fst positionPlayed
@@ -73,8 +73,8 @@ module internal Messages =
             match subBoards with
             | Some sb ->
                 let newGm = GameRules.updateModel gm sb
-                { model with GameModel = newGm }, Cmd.none
-            | None -> model, Cmd.none // TODO: FIX THIS
+                { model with GameModel = newGm }, Cmd.none, GameExternalMsg.NoOp
+            | None -> model, Cmd.none, GameExternalMsg.NoOp // TODO: FIX THIS
 
         | SKSurfaceTouched point when (gm.CurrentPlayer.PlayerId = model.MyStatus.PlayerId) && gm.Board.Winner.IsNone -> 
             let globalTileIndex = calculateGlobalTileIndex model.Size point
@@ -89,7 +89,7 @@ module internal Messages =
             let gameMove = { GameMove.Player = model.MyStatus; PositionPlayed = positionPlayed }
             
             match GameRules.tryPlayPosition gm globalTileIndex with
-            | None -> (model, Cmd.none)
+            | None -> (model, Cmd.none, GameExternalMsg.NoOp)
             | Some subBoard ->
                 let newGm = GameRules.updateModel gm subBoard
 
@@ -99,7 +99,10 @@ module internal Messages =
                     | LocalAiGame -> Cmd.ofAsyncMsg <| AiPlayer.playPosition newGm
                     | _ -> Cmd.none
 
-                ({ model with GameModel = newGm }, command)
-        | _ -> (model, Cmd.none)
+                ({ model with GameModel = newGm }, command, GameExternalMsg.NoOp)
+        | GoToMainMenu ->
+            // TODO: Send gameQuite message
+            model, Cmd.none, GameExternalMsg.NavigateToMainMenu
+        | _ -> (model, Cmd.none, GameExternalMsg.NoOp)
             
                 

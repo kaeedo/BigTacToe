@@ -11,7 +11,7 @@ module internal SignalRMessages =
 
         match response with
         | Response.Connected ->
-            model, Cmd.SignalR.send model.Hub (Action.SearchOrCreateGame model.GameModel.CurrentPlayer.PlayerId)
+            model, Cmd.SignalR.send model.Hub (Action.SearchOrCreateGame model.GameModel.CurrentPlayer.PlayerId), GameExternalMsg.NoOp
         | Response.GameStarted (gameId, participants) ->
             let me =
                 if (fst participants).PlayerId = model.MyStatus.PlayerId
@@ -33,9 +33,9 @@ module internal SignalRMessages =
                   OpponentStatus = Joined opponent
                   MyStatus = me
                   GameModel = gameModel },
-            Cmd.none
+            Cmd.none, GameExternalMsg.NoOp
         | Response.MoveMade gm ->
             if gm.Player.PlayerId = model.MyStatus.PlayerId
-            then model, Cmd.none
-            else model, (Cmd.ofMsg (OpponentPlayed gm.PositionPlayed))
-        | _ -> model, Cmd.none // TODO: this
+            then model, Cmd.none, GameExternalMsg.NoOp
+            else model, (Cmd.ofMsg (OpponentPlayed gm.PositionPlayed)), GameExternalMsg.NoOp
+        | _ -> model, Cmd.none, GameExternalMsg.NoOp // TODO: this

@@ -74,8 +74,9 @@ module private App =
             let cmd2 = handleMainExternalMsg externalMsg
             { model with MainMenuPageModel = m }, Cmd.batch [(Cmd.map MainMenuPageMsg cmd); cmd2 ]
         | GamePageMsg msg ->
-            let m, cmd = Messages.update msg model.GamePageModel.Value
-            { model with GamePageModel = Some m }, (Cmd.map GamePageMsg cmd)
+            let m, cmd, externalMsg = Messages.update msg model.GamePageModel.Value
+            let cmd2 = handleGameExternalMsg externalMsg
+            { model with GamePageModel = Some m }, Cmd.batch [(Cmd.map GamePageMsg cmd); cmd2]
 
         | NavigationPopped ->
             navigationMapper model, Cmd.none
@@ -114,6 +115,8 @@ module private App =
             let newGm, cmd = newGm, Cmd.none
             let m = { Size = 100, 100; GameModel = newGm; OpponentStatus = WaitingForPrivate -1; Hub = None; MyStatus = participant; GameId = 0 }
             { model with GamePageModel = Some m }, (Cmd.map GamePageMsg cmd)
+        | GoToMainMenu ->
+            navigationMapper { model with GamePageModel = None }, Cmd.none
 
     let getPages (allPages: Pages) =
         let mainMenuPage = allPages.MainMenuPage
