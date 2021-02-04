@@ -8,6 +8,7 @@ open Fable.SignalR.Elmish
 module internal SignalRMessages =
     let handleSignalRMessage model response =
         printfn "Response received: %A" response
+
         match response with
         | Response.Connected ->
             model, Cmd.SignalR.send model.Hub (Action.SearchOrCreateGame model.GameModel.CurrentPlayer.PlayerId)
@@ -16,15 +17,23 @@ module internal SignalRMessages =
                 if (fst participants).PlayerId = model.MyStatus.PlayerId
                 then fst participants
                 else snd participants
-                
+
             let opponent =
                 if (fst participants).PlayerId = model.MyStatus.PlayerId
                 then snd participants
                 else fst participants
-                
-            let gameModel = { model.GameModel with Players = TwoPlayers (me, opponent) }
-            
-            { model with GameId = gameId; OpponentStatus = Joined opponent; MyStatus = me; GameModel = gameModel }, Cmd.none
+
+            let gameModel =
+                { model.GameModel with
+                      Players = TwoPlayers(me, opponent)
+                      CurrentPlayer = fst participants }
+
+            { model with
+                  GameId = gameId
+                  OpponentStatus = Joined opponent
+                  MyStatus = me
+                  GameModel = gameModel },
+            Cmd.none
         | Response.MoveMade gm ->
             if gm.Player.PlayerId = model.MyStatus.PlayerId
             then model, Cmd.none

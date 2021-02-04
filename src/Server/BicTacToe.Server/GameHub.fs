@@ -68,8 +68,8 @@ module GameHub =
             | Ok (gameId, game) ->
                 match game.Players with
                 | TwoPlayers (player1, player2) ->
-                    Task.WhenAll(hubContext.Clients.Group(player1.ToString()).Send(Response.GameStarted (gameId, (player1, player2))), 
-                                 hubContext.Clients.Group(player2.ToString()).Send(Response.GameStarted (gameId, (player1, player2))))
+                    Task.WhenAll(hubContext.Clients.Group(player1.PlayerId.ToString()).Send(Response.GameStarted (gameId, (player1, player2))), 
+                                 hubContext.Clients.Group(player2.PlayerId.ToString()).Send(Response.GameStarted (gameId, (player1, player2))))
                 | _ -> Task.FromResult(()) :> Task // TODO: FIX THIS
             | Error _ -> Task.FromResult(()) :> Task // TODO: FIX THIS
         
