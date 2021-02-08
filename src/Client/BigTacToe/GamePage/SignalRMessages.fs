@@ -41,4 +41,11 @@ module internal SignalRMessages =
             else model, (Cmd.ofMsg (OpponentPlayed gm.PositionPlayed)), GameExternalMsg.NoOp
         | Response.GameFinished w ->
             model, Cmd.none, GameExternalMsg.NoOp
-        | _ -> model, Cmd.none, GameExternalMsg.NoOp // TODO: this
+        | Response.PlayerQuit ->
+            let board = { model.GameModel.Board with Winner = Some (Participant model.MyStatus) }
+            let gm =
+                { model.GameModel with
+                    Players = OnePlayer model.MyStatus
+                    Board = board }
+            { model with GameModel = gm; OpponentStatus = Quit }, Cmd.none, GameExternalMsg.NoOp
+        // | _ -> model, Cmd.none, GameExternalMsg.NoOp // TODO: this

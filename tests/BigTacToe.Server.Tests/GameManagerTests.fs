@@ -164,6 +164,31 @@ module GameManagerTests =
                 test <@ model.Players = TwoPlayers ({ Participant.PlayerId = player1; Meeple = Meeple.Ex }, { Participant.PlayerId = player2; Meeple = Meeple.Oh }) @>
             | Result.Error e -> failtestf "Join Game should have succeeded, but failed with error: %A" e
         }
+        
+        Tests.test "" {
+            // Arrange
+            let gm = Manager()
+            let player1 = Guid.NewGuid()
+            let player2 = Guid.NewGuid()
+
+            let startedGameId = gm.StartGame player1
+
+            let joinGameIdResult = gm.JoinRandomGame (player2)
+            
+            // Assume
+            match joinGameIdResult with
+            | Result.Ok joinedGameId -> test <@ startedGameId = joinedGameId @>
+            | Result.Error e -> failtestf "Join Game should have succeeded, but failed with error: %A" e
+
+            // Act
+            let quitResult = gm.PlayerQuit startedGameId player2
+            
+            // Assert
+            match quitResult with
+            | Result.Ok gameModel ->
+                test <@ gameModel.Players = OnePlayer ({ Participant.PlayerId = player1; Meeple = Meeple.Ex }) @>
+            | Result.Error e -> failtestf "Join Game should have succeeded, but failed with error: %A" e
+        }
 
         testList "Play Position tests" [
             let getGameModelForPositionPlayed (gm: Manager) gameId participant1 participant2 i p =

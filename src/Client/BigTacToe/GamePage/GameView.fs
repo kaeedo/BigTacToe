@@ -61,8 +61,9 @@ module internal Game =
                     
             match model.GameModel.Board.Winner with
             | Some (Participant p) ->
+                let reason = if model.OpponentStatus = Quit then " Opponent quit." else String.Empty
                 if p.PlayerId = model.MyStatus.PlayerId
-                then [ View.Label(text = "You Win!", fontSize = FontSize.Size 24.0, horizontalTextAlignment = TextAlignment.Center)  ]
+                then [ View.Label(text = sprintf "You Win!%s" reason, fontSize = FontSize.Size 24.0, horizontalTextAlignment = TextAlignment.Center)  ]
                 else [ View.Label(text = "You Lose :(", fontSize = FontSize.Size 24.0, horizontalTextAlignment = TextAlignment.Center)  ]
             | Some (Draw) ->
                 [ View.Label(text = "It's a tie game", fontSize = FontSize.Size 24.0, horizontalTextAlignment = TextAlignment.Center)  ]
@@ -98,7 +99,8 @@ module internal Game =
                                        .StackLayout(height = 30.0,
                                                     children = [ View.ActivityIndicator(isRunning = true) ])
                                        .Row(2)
-                               | Joined p ->
+                               | Quit
+                               | Joined _ ->
                                    yield! multiplayerText model
                                    gameBoard.Row(2)
 

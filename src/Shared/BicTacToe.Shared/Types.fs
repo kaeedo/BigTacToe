@@ -83,6 +83,7 @@ module SignalRHub =
         | HostPrivateGame of Guid
         | JoinPrivateGame of GameId * Guid
         | MakeMove of GameId * GameMove
+        | QuitGame of GameId * Guid
 
     [<RequireQualifiedAccess>]
     type Response =
@@ -91,6 +92,7 @@ module SignalRHub =
         | GameReady of GameId
         | MoveMade of GameMove // Maybe Result<_, isValid: bool>
         | GameFinished of BoardWinner
+        | PlayerQuit
 
 [<RequireQualifiedAccess>]
 module Endpoints =

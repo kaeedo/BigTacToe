@@ -81,6 +81,15 @@ module GameHub =
                                  hubContext.Clients.Group(player2.PlayerId.ToString()).Send(Response.GameStarted (gameId, (player1, player2))))
                 | _ -> Task.FromResult(()) :> Task // TODO: FIX THIS
             | Error _ -> Task.FromResult(()) :> Task // TODO: FIX THIS
+        | Action.QuitGame (gameId, playerId) ->
+            let gameModelResult = manager.PlayerQuit gameId playerId
+            
+            match gameModelResult with
+            | Ok gameModel ->
+                let (OnePlayer remainingPlayer) = gameModel.Players
+                hubContext.Clients.Group(remainingPlayer.PlayerId.ToString()).Send(Response.PlayerQuit)
+            | Error _ -> Task.FromResult(()) :> Task // TODO: FIX THIS
+            
         
     let private config =
         { SignalR.Config.Default<Action, Response>()

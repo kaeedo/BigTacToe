@@ -24,6 +24,7 @@ module GameManager =
     | JoinRandomGame of Guid * AsyncReplyChannel<Result<GameId, GameError>>
     | JoinPrivateGame of Guid * GameId * AsyncReplyChannel<Result<GameId, GameError>>
     | PlayPosition of GameId * GameMove * AsyncReplyChannel<Result<GameModel * GameMove, GameError>>
+    | PlayerQuit of GameId * Guid * AsyncReplyChannel<Result<GameModel, GameError>>
     
     let private rnd = Random()
 
@@ -34,7 +35,7 @@ module GameManager =
 
     let private idGenerator state =
         let rec newId id =
-            if state.OngoingGames.ContainsKey(id)
+            if state.OngoingGames.ContainsKey(id) || state.PendingGames.ContainsKey(id)
             then newId (rnd.Next(1000, 9999))
             else id
         newId (rnd.Next(1000, 9999))
@@ -172,6 +173,28 @@ module GameManager =
                                 | None ->
                                     rc.Reply (Result.Error InvalidMove)
                                     return! loop state
+                        | PlayerQuit (gameId, playerId, rc) ->
+                            match state.OngoingGames.TryFind gameId with
+                            | Some g ->
+                                match g.Players with
+                                | TwoPlayers (p1, p2) ->
+                                    let remainingPlayer =
+                                        if p1.PlayerId = playerId then p2 else p1
+                                    
+                                    let gameModel = { g with Players = OnePlayer remainingPlayer }
+                                    rc.Reply(Result.Ok (gameModel))
+                                    
+                                    let ongoingGames = state.OngoingGames.Remove gameId
+                                    
+                                    return! loop { state with OngoingGames = ongoingGames }
+                                | _ ->
+                                    rc.Reply(Result.Error InvalidGameState)
+                                    return! loop state
+                                
+                            | None ->
+                                rc.Reply(Result.Error InvalidGameId)
+                            
+                                return! loop state
                     }
             
                 loop({ State.OngoingGames = Map.empty; PendingGames = Map.empty })
@@ -189,4 +212,6 @@ module GameManager =
             agent.PostAndReply (fun rc -> JoinPrivateGame (playerId, gameId, rc))
         member __.PlayPosition gameId gameMove =
             agent.PostAndReply (fun rc -> PlayPosition (gameId, gameMove, rc))
+        member __.PlayerQuit gameId playerId =
+            agent.PostAndReply (fun rc -> PlayerQuit (gameId, playerId, rc))
 

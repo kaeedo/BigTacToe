@@ -5,6 +5,7 @@ open SkiaSharp
 open BigTacToe.Shared
 open BigTacToe.Shared.SignalRHub
 open Fable.SignalR.Elmish
+open Xamarin.Forms
 
 module internal Messages =
     let private calculateGlobalTileIndex (size: int * int) (point: SKPoint) =
@@ -110,6 +111,20 @@ module internal Messages =
 
                 ({ model with GameModel = newGm }, command, GameExternalMsg.NoOp)
         | GoToMainMenu ->
-            // TODO: Send gameQuite message
-            model, Cmd.none, GameExternalMsg.NavigateToMainMenu
+            if model.GameModel.Board.Winner.IsSome
+            then model, Cmd.none, GameExternalMsg.NavigateToMainMenu
+            else model, (Cmd.ofMsg DisplayGameQuitAlert), GameExternalMsg.NoOp
+        | DisplayGameQuitAlert ->
+            let alertResult =
+                async {
+                    let! confirmation = Application.Current.MainPage.DisplayAlert("Quit Game", "Are you sure you want to quit this game and return to the menu?", "Yes", "No") |> Async.AwaitTask
+                    return GameQuiteAlertResult confirmation
+                }
+
+            model, Cmd.ofAsyncMsg alertResult, GameExternalMsg.NoOp
+        | GameQuiteAlertResult isSure ->
+            if isSure
+            then
+                model, Cmd.SignalR.send model.Hub (Action.QuitGame (model.GameId, model.MyStatus.PlayerId)), GameExternalMsg.NavigateToMainMenu
+            else model, Cmd.none, GameExternalMsg.NoOp
         | _ -> (model, Cmd.none, GameExternalMsg.NoOp)

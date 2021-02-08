@@ -11,6 +11,7 @@ type OpponentStatus =
     | LookingForGame
     | WaitingForPrivate of int
     | Joined of Participant
+    | Quit
 
 type ClientGameModel =
     { Size: int * int
@@ -21,8 +22,6 @@ type ClientGameModel =
       GameModel: GameModel }
 
 type GameMsg =
-    //| DisplayNewGameAlert
-    //| NewGameAlertResult of bool
     | ResizeCanvas of SKSizeI
     | SKSurfaceTouched of SKPoint
     | OpponentPlayed of PositionPlayed
@@ -32,6 +31,8 @@ type GameMsg =
     | SignalRMessage of Response
 
     | GoToMainMenu
+    | DisplayGameQuitAlert
+    | GameQuiteAlertResult of bool
 
 type GameExternalMsg =
     | NoOp
