@@ -44,7 +44,7 @@ type GameModel =
     { Players: Players
       CurrentPlayer: Participant
       Board: Board }
-    static member init participant =
+    static member init participants =
         let initBoard =
             let subBoard i j =
                 let newI = i + (i * 2)
@@ -61,8 +61,16 @@ type GameModel =
 
             bigBoard
 
-        { GameModel.Players = NoOne
-          CurrentPlayer = participant
+        let startingPlayer =
+            match participants with
+            | TwoPlayers (p1, _) -> p1
+            | OnePlayer p -> p
+            | NoOne ->
+                { Participant.PlayerId = Guid()
+                  Meeple = Meeple.Ex }
+
+        { GameModel.Players = participants
+          CurrentPlayer = startingPlayer
           Board = initBoard }
 
 type PositionPlayed = (int * int) * (int * int) //SubBoard i,j Tile i,j
@@ -90,7 +98,7 @@ module SignalRHub =
         | Connected
         | GameStarted of GameId * (Participant * Participant)
         | GameReady of GameId
-        | MoveMade of GameMove // Maybe Result<_, isValid: bool>
+        | MoveMade of GameMove
         | GameFinished of BoardWinner
         | PlayerQuit
 

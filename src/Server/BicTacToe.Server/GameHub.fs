@@ -66,7 +66,7 @@ module GameHub =
                 | _ -> Task.FromResult(()) :> Task // TODO: FIX THIS
         | Action.HostPrivateGame playerId ->
             // send waiting for opponent
-            let newGame = manager.StartGame playerId
+            let newGame = manager.StartPrivateGame playerId
             hubContext.Clients.Group(playerId.ToString()).Send(Response.GameReady newGame)
         | Action.JoinPrivateGame (gameId, playerId) ->
             let tryJoinGame =
