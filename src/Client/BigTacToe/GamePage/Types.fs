@@ -32,7 +32,10 @@ type GameMsg =
 
     | GoToMainMenu
     | DisplayGameQuitAlert
-    | GameQuiteAlertResult of bool
+    | GameQuitAlertResult of bool
+    
+    | UnrecoverableError
+    | ReturnToMainMenu
 
 type GameExternalMsg =
     | NoOp

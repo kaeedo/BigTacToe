@@ -13,61 +13,71 @@ open System.Threading.Tasks
 open Fable.SignalR
 
 module GameHub =
+    let private sendMessage (hubContext: FableHub<Action, Response>) (playerId: Guid) (message: SignalRHub.Response) =
+        hubContext.Clients.Group(playerId.ToString()).Send(message)
+        
     let private invoke (msg: Action) (hubContext: FableHub) =
-        task {
-            return (Response.GameFinished BoardWinner.Draw)
-        }
+        task { return (Response.GameFinished BoardWinner.Draw) }
 
     let private send (msg: Action) (hubContext: FableHub<Action, Response>) =
-        let manager = hubContext.Services.GetService<GameManager.Manager>()
+        let manager =
+            hubContext.Services.GetService<GameManager.Manager>()
+            
+        let sendMessage = sendMessage hubContext 
 
         match msg with
         | Action.OnConnect playerId ->
             printfn "%A has connected" playerId
             task {
                 do! hubContext.Groups.AddToGroupAsync(hubContext.Context.ConnectionId, playerId.ToString())
-                do! hubContext.Clients.Group(playerId.ToString()).Send(Response.Connected)    
+                do! sendMessage playerId Response.Connected
             } :> Task
         | Action.SearchOrCreateGame playerId ->
-            let tryGetGame = 
-                manager.JoinRandomGame
-                >=> manager.GetGame
+            let tryGetGame =
+                manager.JoinRandomGame >=> manager.GetGame
 
             match tryGetGame playerId with
             | Ok (gameId, game) ->
                 match game.Players with
-                | TwoPlayers (player1, player2) ->
-                    Task.WhenAll(hubContext.Clients.Group(player1.PlayerId.ToString()).Send(Response.GameStarted (gameId, (player1, player2))), 
-                                 hubContext.Clients.Group(player2.PlayerId.ToString()).Send(Response.GameStarted (gameId, (player1, player2))))
-                | _ -> Task.FromResult(()) :> Task // TODO: FIX THIS
-            | Error NoOngoingGames -> 
-                let newGameId = manager.StartGame playerId 
+                | TwoPlayers (p1, p2) ->
+                    Task.WhenAll(sendMessage (p1.PlayerId) (Response.GameStarted(gameId, (p1, p2))),
+                                 sendMessage (p2.PlayerId) (Response.GameStarted(gameId, (p1, p2))))
+                | OnePlayer p -> sendMessage p.PlayerId Response.UnrecoverableError
+                | NoOne -> Task.FromResult(()) :> Task
+            | Error NoOngoingGames ->
+                let newGameId = manager.StartGame playerId
                 printfn "started new game with id: {%i} for player %A" newGameId playerId
-                hubContext.Clients.Group(playerId.ToString()).Send(Response.GameReady newGameId)
+                sendMessage playerId (Response.GameReady newGameId)
             | Error _ -> Task.FromResult(()) :> Task // TODO: FIX THIS
         | Action.MakeMove (gameId, gameMove) ->
             printfn "Received make move: %A" (gameId, gameMove)
+
             match manager.PlayPosition gameId gameMove with
             | Error e -> Task.FromResult(()) :> Task // TODO: FIX THIS
             | Ok (game, gameMove) ->
+                
                 match game.Players with
                 | TwoPlayers (player1, player2) ->
                     task {
-                        do! Task.WhenAll(hubContext.Clients.Group(player1.PlayerId.ToString()).Send(Response.MoveMade gameMove),
-                                         hubContext.Clients.Group(player2.PlayerId.ToString()).Send(Response.MoveMade gameMove))
-                        
+                        do! Task.WhenAll
+                                (sendMessage player1.PlayerId (Response.MoveMade gameMove),
+                                 sendMessage player2.PlayerId (Response.MoveMade gameMove))
+
                         match game.Board.Winner with
                         | Some w ->
-                            do! Task.WhenAll(hubContext.Clients.Group(player1.PlayerId.ToString()).Send(Response.GameFinished w),
-                                             hubContext.Clients.Group(player2.PlayerId.ToString()).Send(Response.GameFinished w))
+                            do! Task.WhenAll
+                                    (sendMessage player1.PlayerId (Response.GameFinished w),
+                                     sendMessage player2.PlayerId (Response.GameFinished w))
                         | None -> ()
                     } :> Task
-                        
-                | _ -> Task.FromResult(()) :> Task // TODO: FIX THIS
+                | OnePlayer p ->
+                    sendMessage p.PlayerId Response.UnrecoverableError
+                | NoOne -> Task.FromResult(()) :> Task
         | Action.HostPrivateGame playerId ->
             // send waiting for opponent
             let newGame = manager.StartPrivateGame playerId
-            hubContext.Clients.Group(playerId.ToString()).Send(Response.GameReady newGame)
+
+            sendMessage playerId (Response.GameReady newGame)
         | Action.JoinPrivateGame (gameId, playerId) ->
             let tryJoinGame =
                 manager.JoinPrivateGame playerId
@@ -76,30 +86,37 @@ module GameHub =
             match tryJoinGame gameId with
             | Ok (gameId, game) ->
                 match game.Players with
-                | TwoPlayers (player1, player2) ->
-                    Task.WhenAll(hubContext.Clients.Group(player1.PlayerId.ToString()).Send(Response.GameStarted (gameId, (player1, player2))), 
-                                 hubContext.Clients.Group(player2.PlayerId.ToString()).Send(Response.GameStarted (gameId, (player1, player2))))
-                | _ -> Task.FromResult(()) :> Task // TODO: FIX THIS
+                | TwoPlayers (p1, p2) ->
+                    Task.WhenAll
+                        (sendMessage p1.PlayerId (Response.GameStarted(gameId, (p1, p2))),
+                         sendMessage p2.PlayerId (Response.GameStarted(gameId, (p1, p2))))
+                | OnePlayer p ->
+                    sendMessage p.PlayerId Response.UnrecoverableError
+                | NoOne -> Task.FromResult(()) :> Task
             | Error _ -> Task.FromResult(()) :> Task // TODO: FIX THIS
         | Action.QuitGame (gameId, playerId) ->
             let gameModelResult = manager.PlayerQuit gameId playerId
-            
+
             match gameModelResult with
             | Ok gameModel ->
-                let (OnePlayer remainingPlayer) = gameModel.Players
-                hubContext.Clients.Group(remainingPlayer.PlayerId.ToString()).Send(Response.PlayerQuit)
-            | Error _ -> Task.FromResult(()) :> Task // TODO: FIX THIS
-            
-        
+                match gameModel.Players with
+                |OnePlayer remainingPlayer ->
+                    sendMessage remainingPlayer.PlayerId Response.PlayerQuit
+                | TwoPlayers (p1, p2) ->
+                    Task.WhenAll(sendMessage p1.PlayerId Response.UnrecoverableError,
+                                 sendMessage p2.PlayerId Response.UnrecoverableError)
+                | NoOne -> Task.FromResult(()) :> Task
+            | Error _ -> Task.FromResult(()) :> Task
+
+
     let private config =
-        { SignalR.Config.Default<Action, Response>()
-            with 
-                UseMessagePack = true
-                OnConnected = None
-                OnDisconnected = None }
+        { SignalR.Config.Default<Action, Response>() with
+              UseMessagePack = true
+              OnConnected = None
+              OnDisconnected = None }
 
     let settings =
         { SignalR.Settings.EndpointPattern = Endpoints.Root
           SignalR.Settings.Send = send
-          SignalR.Settings.Invoke = invoke 
+          SignalR.Settings.Invoke = invoke
           SignalR.Settings.Config = Some config }

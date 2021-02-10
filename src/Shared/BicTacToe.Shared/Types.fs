@@ -101,6 +101,7 @@ module SignalRHub =
         | MoveMade of GameMove
         | GameFinished of BoardWinner
         | PlayerQuit
+        | UnrecoverableError
 
 [<RequireQualifiedAccess>]
 module Endpoints =

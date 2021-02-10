@@ -4,6 +4,7 @@ open Fabulous
 open BigTacToe.Shared
 open BigTacToe.Shared.SignalRHub
 open Fable.SignalR.Elmish
+open Xamarin.Forms
 
 module internal SignalRMessages =
     let handleSignalRMessage model response =
@@ -48,4 +49,12 @@ module internal SignalRMessages =
                     Players = OnePlayer model.MyStatus
                     Board = board }
             { model with GameModel = gm; OpponentStatus = Quit }, Cmd.none, GameExternalMsg.NoOp
+        | Response.UnrecoverableError ->
+            let msg =
+                async {
+                    do! Application.Current.MainPage.DisplayAlert("Error", "An unrecoverable error was encountered", "Main Menu") |> Async.AwaitTask
+                    return ReturnToMainMenu
+                }
+                
+            model, Cmd.ofAsyncMsg msg, GameExternalMsg.NoOp
         // | _ -> model, Cmd.none, GameExternalMsg.NoOp // TODO: this

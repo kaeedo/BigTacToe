@@ -26,18 +26,6 @@ module internal Messages =
         let gm = model.GameModel
 
         match msg with
-        //| DisplayNewGameAlert ->
-        //    let alertResult =
-        //        async {
-        //            let! confirmation = Application.Current.MainPage.DisplayAlert("New Game", "Are you sure you want to start a new game?", "Yes", "No") |> Async.AwaitTask
-        //            return NewGameAlertResult confirmation
-        //        }
-
-        //    model, Cmd.ofAsyncMsg alertResult
-        //| NewGameAlertResult shouldStartNew ->
-        //    if shouldStartNew
-        //    then GameModel.init (), Cmd.none
-        //    else model, Cmd.none
         | ConnectToServer ->
             let cmd =
                 Cmd.SignalR.connect RegisterHub (fun hub ->
@@ -118,13 +106,15 @@ module internal Messages =
             let alertResult =
                 async {
                     let! confirmation = Application.Current.MainPage.DisplayAlert("Quit Game", "Are you sure you want to quit this game and return to the menu?", "Yes", "No") |> Async.AwaitTask
-                    return GameQuiteAlertResult confirmation
+                    return GameQuitAlertResult confirmation
                 }
 
             model, Cmd.ofAsyncMsg alertResult, GameExternalMsg.NoOp
-        | GameQuiteAlertResult isSure ->
+        | GameQuitAlertResult isSure ->
             if isSure
             then
                 model, Cmd.SignalR.send model.Hub (Action.QuitGame (model.GameId, model.MyStatus.PlayerId)), GameExternalMsg.NavigateToMainMenu
             else model, Cmd.none, GameExternalMsg.NoOp
+        | ReturnToMainMenu ->
+            model, Cmd.none, GameExternalMsg.NavigateToMainMenu
         | _ -> (model, Cmd.none, GameExternalMsg.NoOp)
