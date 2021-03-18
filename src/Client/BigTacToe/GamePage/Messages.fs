@@ -71,13 +71,15 @@ module internal Messages =
                 let newGm = GameRules.updateModel gm sb
                 { model with GameModel = newGm }, Cmd.none, GameExternalMsg.NoOp
             | None -> model, Cmd.none, GameExternalMsg.NoOp // TODO: FIX THIS
-            
+
         | StartPrivateGame ->
             let playerId = model.GameModel.CurrentPlayer.PlayerId
-            
-            let cmd = Cmd.SignalR.send model.Hub (Action.HostPrivateGame playerId)
+
+            let cmd =
+                Cmd.SignalR.send model.Hub (Action.HostPrivateGame playerId)
+
             model, cmd, GameExternalMsg.NoOp
-            
+
         | EnterGameId text ->
             let model = { model with GameIdText = text }
             model, Cmd.none, GameExternalMsg.NoOp
@@ -85,13 +87,50 @@ module internal Messages =
         | JoinPrivateGame text ->
             let playerId = model.GameModel.CurrentPlayer.PlayerId
             let (isSuccess, gameId) = Int32.TryParse(text)
-            if isSuccess
-            then
-                let cmd = Cmd.SignalR.send model.Hub (Action.JoinPrivateGame (gameId, playerId))
+
+            if isSuccess then
+                let cmd =
+                    Cmd.SignalR.send model.Hub (Action.JoinPrivateGame(gameId, playerId))
+
                 model, cmd, GameExternalMsg.NoOp
-            else model, Cmd.none, GameExternalMsg.NoOp
-        
-        | SKSurfaceTouched point when (gm.CurrentPlayer.PlayerId = model.MyStatus.PlayerId)
+            else
+                model, Cmd.none, GameExternalMsg.NoOp
+                
+        | SKSurfaceTouched point when (model.OpponentStatus = LocalGame)
+                                      && gm.Board.Winner.IsNone ->
+            let globalTileIndex =
+                calculateGlobalTileIndex model.Size point
+
+            let positionPlayed =
+                let (tileIndexI, tileIndexJ) = globalTileIndex
+
+                let subBoardIndexI = tileIndexI / 3
+                let subBoardIndexJ = tileIndexJ / 3
+                (subBoardIndexI, subBoardIndexJ), (tileIndexI % 3, tileIndexJ % 3)
+
+            let gameMove =
+                { GameMove.Player = model.GameModel.CurrentPlayer
+                  PositionPlayed = positionPlayed }
+
+            match GameRules.tryPlayPosition gm globalTileIndex with
+            | None -> (model, Cmd.none, GameExternalMsg.NoOp)
+            | Some subBoard ->
+                let newGm = GameRules.updateModel gm subBoard
+
+                let isGameOver = newGm.Board.Winner.IsSome
+
+                let command =
+                    match model.OpponentStatus with
+                    | Joined _ -> Cmd.SignalR.send model.Hub (Action.MakeMove(model.GameId, gameMove))
+                    | LocalAiGame ->
+                        if isGameOver
+                        then Cmd.none
+                        else Cmd.ofAsyncMsg <| AiPlayer.playPosition newGm
+                    | _ -> Cmd.none
+
+                ({ model with GameModel = newGm }, command, GameExternalMsg.NoOp)
+        | SKSurfaceTouched point when (model.OpponentStatus <> LocalGame)
+                                      && (gm.CurrentPlayer.PlayerId = model.MyStatus.PlayerId)
                                       && gm.Board.Winner.IsNone ->
             let globalTileIndex =
                 calculateGlobalTileIndex model.Size point
@@ -113,6 +152,7 @@ module internal Messages =
                 let newGm = GameRules.updateModel gm subBoard
 
                 let isGameOver = newGm.Board.Winner.IsSome
+
                 let command =
                     match model.OpponentStatus with
                     | Joined _ -> Cmd.SignalR.send model.Hub (Action.MakeMove(model.GameId, gameMove))
@@ -130,16 +170,21 @@ module internal Messages =
         | DisplayGameQuitAlert ->
             let alertResult =
                 async {
-                    let! confirmation = Application.Current.MainPage.DisplayAlert("Quit Game", "Are you sure you want to quit this game and return to the menu?", "Yes", "No") |> Async.AwaitTask
+                    let! confirmation =
+                        Application.Current.MainPage.DisplayAlert
+                            ("Quit Game", "Are you sure you want to quit this game and return to the menu?", "Yes", "No")
+                        |> Async.AwaitTask
+
                     return GameQuitAlertResult confirmation
                 }
 
             model, Cmd.ofAsyncMsg alertResult, GameExternalMsg.NoOp
         | GameQuitAlertResult isSure ->
-            if isSure
-            then
-                model, Cmd.SignalR.send model.Hub (Action.QuitGame (model.GameId, model.MyStatus.PlayerId)), GameExternalMsg.NavigateToMainMenu
-            else model, Cmd.none, GameExternalMsg.NoOp
-        | ReturnToMainMenu ->
-            model, Cmd.none, GameExternalMsg.NavigateToMainMenu
+            if isSure then
+                model,
+                Cmd.SignalR.send model.Hub (Action.QuitGame(model.GameId, model.MyStatus.PlayerId)),
+                GameExternalMsg.NavigateToMainMenu
+            else
+                model, Cmd.none, GameExternalMsg.NoOp
+        | ReturnToMainMenu -> model, Cmd.none, GameExternalMsg.NavigateToMainMenu
         | _ -> (model, Cmd.none, GameExternalMsg.NoOp)
