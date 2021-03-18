@@ -74,8 +74,7 @@ module internal Render =
                     drawEx Colors.gameWinner canvas rect
                 else
                     drawOh Colors.gameWinner canvas rect
-            | Draw -> drawGameDraw canvas rect
-            | _ -> ())
+            | Draw -> drawGameDraw canvas rect)
 
     let private calculateSubBoardRect i j (width, height) =
         let (width, height) = width / 3, height / 3

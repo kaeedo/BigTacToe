@@ -1,5 +1,6 @@
 ﻿namespace BigTacToe.Pages
 
+open System
 open Fabulous
 open SkiaSharp
 open BigTacToe.Shared
@@ -44,7 +45,8 @@ module internal Messages =
             let cmd =
                 match model.OpponentStatus with
                 | LookingForGame -> Cmd.SignalR.send hub (Action.OnConnect playerId)
-                | _ -> Cmd.none // TODO: This
+                | WaitingForPrivate _ -> Cmd.SignalR.send hub (Action.OnConnect playerId)
+                | _ -> Cmd.none
 
             { model with Hub = hub }, cmd, GameExternalMsg.NoOp
         | SignalRMessage response -> SignalRMessages.handleSignalRMessage model response
@@ -69,7 +71,26 @@ module internal Messages =
                 let newGm = GameRules.updateModel gm sb
                 { model with GameModel = newGm }, Cmd.none, GameExternalMsg.NoOp
             | None -> model, Cmd.none, GameExternalMsg.NoOp // TODO: FIX THIS
+            
+        | StartPrivateGame ->
+            let playerId = model.GameModel.CurrentPlayer.PlayerId
+            
+            let cmd = Cmd.SignalR.send model.Hub (Action.HostPrivateGame playerId)
+            model, cmd, GameExternalMsg.NoOp
+            
+        | EnterGameId text ->
+            let model = { model with GameIdText = text }
+            model, Cmd.none, GameExternalMsg.NoOp
 
+        | JoinPrivateGame text ->
+            let playerId = model.GameModel.CurrentPlayer.PlayerId
+            let (isSuccess, gameId) = Int32.TryParse(text)
+            if isSuccess
+            then
+                let cmd = Cmd.SignalR.send model.Hub (Action.JoinPrivateGame (gameId, playerId))
+                model, cmd, GameExternalMsg.NoOp
+            else model, Cmd.none, GameExternalMsg.NoOp
+        
         | SKSurfaceTouched point when (gm.CurrentPlayer.PlayerId = model.MyStatus.PlayerId)
                                       && gm.Board.Winner.IsNone ->
             let globalTileIndex =
@@ -91,10 +112,14 @@ module internal Messages =
             | Some subBoard ->
                 let newGm = GameRules.updateModel gm subBoard
 
+                let isGameOver = newGm.Board.Winner.IsSome
                 let command =
                     match model.OpponentStatus with
                     | Joined _ -> Cmd.SignalR.send model.Hub (Action.MakeMove(model.GameId, gameMove))
-                    | LocalAiGame -> Cmd.ofAsyncMsg <| AiPlayer.playPosition newGm
+                    | LocalAiGame ->
+                        if isGameOver
+                        then Cmd.none
+                        else Cmd.ofAsyncMsg <| AiPlayer.playPosition newGm
                     | _ -> Cmd.none
 
                 ({ model with GameModel = newGm }, command, GameExternalMsg.NoOp)

@@ -15,8 +15,6 @@ type Opponent =
 | Private
 
 type MainMenuMsg =
-| Increment
-| Decrement
 | NavigateToAiGame
 | NavigateToHotSeatGame
 | NavigateToMatchmakingGame
@@ -32,8 +30,6 @@ module internal MainMenu =
 
     let update message model =
         match message with
-        | Increment -> { model with Count = model.Count + 1 }, Cmd.none, MainMenuExternalMsg.NoOp
-        | Decrement -> { model with Count = model.Count - 1 }, Cmd.none, MainMenuExternalMsg.NoOp
         | MainMenuMsg.NavigateToAiGame -> model, Cmd.none, MainMenuExternalMsg.NavigateToGame Ai
         | MainMenuMsg.NavigateToHotSeatGame -> model, Cmd.none, MainMenuExternalMsg.NavigateToGame HotSeat
         | MainMenuMsg.NavigateToMatchmakingGame -> model, Cmd.none, MainMenuExternalMsg.NavigateToGame Random

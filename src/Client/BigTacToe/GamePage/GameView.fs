@@ -58,15 +58,27 @@ module internal Game =
                     (if model.GameModel.CurrentPlayer.PlayerId = model.MyStatus.PlayerId
                      then String.Empty
                      else " not")
-                    
+
             match model.GameModel.Board.Winner with
             | Some (Participant p) ->
-                let reason = if model.OpponentStatus = Quit then " Opponent quit." else String.Empty
-                if p.PlayerId = model.MyStatus.PlayerId
-                then [ View.Label(text = sprintf "You Win!%s" reason, fontSize = FontSize.Size 24.0, horizontalTextAlignment = TextAlignment.Center)  ]
-                else [ View.Label(text = "You Lose :(", fontSize = FontSize.Size 24.0, horizontalTextAlignment = TextAlignment.Center)  ]
+                let reason =
+                    if model.OpponentStatus = Quit then " Opponent quit." else String.Empty
+
+                if p.PlayerId = model.MyStatus.PlayerId then
+                    [ View.Label
+                        (text = sprintf "You Win!%s" reason,
+                         fontSize = FontSize.Size 24.0,
+                         horizontalTextAlignment = TextAlignment.Center) ]
+                else
+                    [ View.Label
+                        (text = "You Lose :(",
+                         fontSize = FontSize.Size 24.0,
+                         horizontalTextAlignment = TextAlignment.Center) ]
             | Some (Draw) ->
-                [ View.Label(text = "It's a tie game", fontSize = FontSize.Size 24.0, horizontalTextAlignment = TextAlignment.Center)  ]
+                [ View.Label
+                    (text = "It's a tie game",
+                     fontSize = FontSize.Size 24.0,
+                     horizontalTextAlignment = TextAlignment.Center) ]
             | None ->
                 [ View.Label(text = iAm, fontSize = FontSize.Size 24.0, horizontalTextAlignment = TextAlignment.Center)
                   View
@@ -80,7 +92,7 @@ module internal Game =
                 (content =
                     View.Grid
                         (rowdefs =
-                            [ Absolute 50.0
+                            [ Absolute 75.0
                               Absolute 50.0
                               Star
                               Absolute 50.0 ],
@@ -108,6 +120,46 @@ module internal Game =
                                        (children =
                                            [ View.Button(text = "Main Menu", command = fun () -> dispatch GoToMainMenu) ]))
                                        .Row(3)
+                               | WaitingForPrivate gameId ->
+                                   match gameId with
+                                   | None ->
+                                       (View.Label
+                                           (text = "Would you like to start a new private game or join a game?",
+                                            fontSize = FontSize.Size 24.0,
+                                            horizontalTextAlignment = TextAlignment.Center))
+                                           .RowSpan(2)
+
+                                       (View.Grid
+                                           (rowdefs = [ Absolute 50.0; Absolute 50.0 ],
+                                            coldefs = [ Stars 2.0; Star ],
+                                            height = 100.0,
+                                            children =
+                                                [ View
+                                                    .Button(text = "Start new game",
+                                                            command = fun () -> dispatch StartPrivateGame)
+                                                      .ColumnSpan(2)
+                                                  View
+                                                      .Entry(placeholder = "Game ID",
+                                                             keyboard = Keyboard.Numeric,
+                                                             textChanged = (fun args -> dispatch <| EnterGameId args.NewTextValue),
+                                                             completed = fun text -> dispatch <| JoinPrivateGame text)
+                                                      .Row(1)
+                                                  View
+                                                      .Button(text = "Join", command = fun () -> dispatch <| JoinPrivateGame model.GameIdText)
+                                                      .Row(1)
+                                                      .Column(1) ]))
+                                           .Row(2)
+                                   | Some gameId ->
+                                       (View.Label
+                                           (text = sprintf "Tell your friend to join Game ID: %i" gameId,
+                                            fontSize = FontSize.Size 24.0,
+                                            horizontalTextAlignment = TextAlignment.Center))
+                                           .RowSpan(2)
+
+                                       View
+                                           .StackLayout(height = 30.0,
+                                                        children = [ View.ActivityIndicator(isRunning = true) ])
+                                           .Row(2)
                                | _ ->
                                    View
                                        .Label(text = gameStatus,

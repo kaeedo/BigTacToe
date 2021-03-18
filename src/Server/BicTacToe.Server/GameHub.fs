@@ -10,7 +10,6 @@ open Microsoft.Extensions.DependencyInjection
 open FSharp.Control.Tasks.V2
 open BigTacToe.Server
 open System.Threading.Tasks
-open Fable.SignalR
 
 module GameHub =
     let private sendMessage (hubContext: FableHub<Action, Response>) (playerId: Guid) (message: SignalRHub.Response) =
@@ -47,15 +46,18 @@ module GameHub =
             | Error NoOngoingGames ->
                 let newGameId = manager.StartGame playerId
                 printfn "started new game with id: {%i} for player %A" newGameId playerId
-                sendMessage playerId (Response.GameReady newGameId)
+                Task.FromResult(()) :> Task
             | Error _ -> Task.FromResult(()) :> Task // TODO: FIX THIS
         | Action.MakeMove (gameId, gameMove) ->
             printfn "Received make move: %A" (gameId, gameMove)
 
             match manager.PlayPosition gameId gameMove with
-            | Error e -> Task.FromResult(()) :> Task // TODO: FIX THIS
+            | Error e -> Task.FromResult(()) :> Task
+                (*match e with
+                | InvalidGameId -> sendMessage p.PlayerId Response.UnrecoverableError
+                | InvalidMove -> sendMessage p.PlayerId Response.UnrecoverableError
+                | _ -> sendMessage p.PlayerId Response.UnrecoverableError*)
             | Ok (game, gameMove) ->
-                
                 match game.Players with
                 | TwoPlayers (player1, player2) ->
                     task {
@@ -74,10 +76,9 @@ module GameHub =
                     sendMessage p.PlayerId Response.UnrecoverableError
                 | NoOne -> Task.FromResult(()) :> Task
         | Action.HostPrivateGame playerId ->
-            // send waiting for opponent
-            let newGame = manager.StartPrivateGame playerId
+            let newGameId = manager.StartPrivateGame playerId
 
-            sendMessage playerId (Response.GameReady newGame)
+            sendMessage playerId (Response.PrivateGameReady newGameId)
         | Action.JoinPrivateGame (gameId, playerId) ->
             let tryJoinGame =
                 manager.JoinPrivateGame playerId

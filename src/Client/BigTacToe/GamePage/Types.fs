@@ -9,7 +9,7 @@ type OpponentStatus =
     | LocalGame
     | LocalAiGame
     | LookingForGame
-    | WaitingForPrivate of int
+    | WaitingForPrivate of GameId option
     | Joined of Participant
     | Quit
 
@@ -17,6 +17,7 @@ type ClientGameModel =
     { Size: int * int
       OpponentStatus: OpponentStatus
       GameId: int
+      GameIdText: string
       MyStatus: Participant
       Hub: Elmish.Hub<Action, Response> option
       GameModel: GameModel }
@@ -26,6 +27,10 @@ type GameMsg =
     | SKSurfaceTouched of SKPoint
     | OpponentPlayed of PositionPlayed
     | ConnectToServer
+    
+    | StartPrivateGame
+    | JoinPrivateGame of string
+    | EnterGameId of string
 
     | RegisterHub of Elmish.Hub<Action, Response>
     | SignalRMessage of Response

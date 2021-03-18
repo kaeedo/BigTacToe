@@ -97,7 +97,7 @@ module SignalRHub =
     type Response =
         | Connected
         | GameStarted of GameId * (Participant * Participant)
-        | GameReady of GameId
+        | PrivateGameReady of GameId
         | MoveMade of GameMove
         | GameFinished of BoardWinner
         | PlayerQuit

@@ -6,11 +6,12 @@ open Fabulous
 open Fabulous.XamarinForms
 open Xamarin.Forms
 open BigTacToe.Shared
+open Fable.SignalR.Elmish
 open System
 
 module private App =
     type Model =
-        { MainMenuPageModel : MainMenuModel
+        { MainMenuPageModel: MainMenuModel
           GamePageModel: ClientGameModel option }
 
     type Pages =
@@ -32,8 +33,7 @@ module private App =
 
     let handleMainExternalMsg externalMsg =
         match externalMsg with
-        | MainMenuExternalMsg.NoOp ->
-            Cmd.none
+        | MainMenuExternalMsg.NoOp -> Cmd.none
         | MainMenuExternalMsg.NavigateToGame opponent ->
             match opponent with
             | Ai -> Cmd.ofMsg GoToAiGame
@@ -43,12 +43,10 @@ module private App =
 
     let handleGameExternalMsg externalMsg =
         match externalMsg with
-        | GameExternalMsg.NoOp ->
-            Cmd.none
-        | GameExternalMsg.NavigateToMainMenu ->
-            Cmd.ofMsg GoToMainMenu
+        | GameExternalMsg.NoOp -> Cmd.none
+        | GameExternalMsg.NavigateToMainMenu -> Cmd.ofMsg GoToMainMenu
 
-    let init () = 
+    let init () =
         let mainMenuPageModel, mainPageMessage = MainMenu.init ()
         //let gamePageModel, gamePageMsg = GamePage.Types.initModel (), Cmd.none
 
@@ -61,89 +59,148 @@ module private App =
 
     let navigationMapper (model: Model) =
         let gameModel = model.GamePageModel
+
         match gameModel with
-        | None ->
-            model
-        | Some _ ->
-            { model with GamePageModel = None }
+        | None -> model
+        | Some _ -> { model with GamePageModel = None }
 
-    let update msg model = 
-        match msg with 
+    let update msg model =
+        match msg with
         | MainMenuPageMsg msg ->
-            let m, cmd, externalMsg = MainMenu.update msg model.MainMenuPageModel
-            let cmd2 = handleMainExternalMsg externalMsg
-            { model with MainMenuPageModel = m }, Cmd.batch [(Cmd.map MainMenuPageMsg cmd); cmd2 ]
-        | GamePageMsg msg ->
-            let m, cmd, externalMsg = Messages.update msg model.GamePageModel.Value
-            let cmd2 = handleGameExternalMsg externalMsg
-            { model with GamePageModel = Some m }, Cmd.batch [(Cmd.map GamePageMsg cmd); cmd2]
+            let m, cmd, externalMsg =
+                MainMenu.update msg model.MainMenuPageModel
 
-        | NavigationPopped ->
-            navigationMapper model, Cmd.none
+            let cmd2 = handleMainExternalMsg externalMsg
+
+            { model with MainMenuPageModel = m },
+            Cmd.batch [ (Cmd.map MainMenuPageMsg cmd)
+                        cmd2 ]
+        | GamePageMsg msg ->
+            let m, cmd, externalMsg =
+                Messages.update msg model.GamePageModel.Value
+
+            let cmd2 = handleGameExternalMsg externalMsg
+
+            { model with GamePageModel = Some m },
+            Cmd.batch [ (Cmd.map GamePageMsg cmd)
+                        cmd2 ]
+
+        | NavigationPopped -> navigationMapper model, Cmd.none
         | GoToAiGame ->
-            let participant = { Participant.PlayerId = Guid.NewGuid(); Meeple = Meeple.Ex } // Get this from "actual" player guid
-            let opponent = { Participant.PlayerId = Guid.NewGuid(); Meeple = Meeple.Oh } // Only for single player
-            let newGm = GameModel.init (TwoPlayers (participant, opponent))
+            let participant =
+                { Participant.PlayerId = Guid.NewGuid()
+                  Meeple = Meeple.Ex }
+
+            let opponent =
+                { Participant.PlayerId = Guid.NewGuid()
+                  Meeple = Meeple.Oh }
+
+            let newGm =
+                GameModel.init (TwoPlayers(participant, opponent))
+
             let newGm, cmd = newGm, Cmd.none
-            let m = { Size = 100, 100; GameModel = newGm; OpponentStatus = LocalAiGame; Hub = None; MyStatus = participant; GameId = 0 }
+
+            let m =
+                { Size = 100, 100
+                  GameModel = newGm
+                  OpponentStatus = LocalAiGame
+                  GameIdText = String.Empty
+                  Hub = None
+                  MyStatus = participant
+                  GameId = 0 }
+
             { model with GamePageModel = Some m }, (Cmd.map GamePageMsg cmd)
         | GoToHotSeatGame ->
             // TODO: this
-            let participant = { Participant.PlayerId = Guid.NewGuid(); Meeple = Meeple.Ex } // Get this from "actual" player guid
-            let opponent = { Participant.PlayerId = Guid.NewGuid(); Meeple = Meeple.Oh } // Only for single player
-            let newGm = GameModel.init (TwoPlayers (participant, opponent))
+            let participant =
+                { Participant.PlayerId = Guid.NewGuid()
+                  Meeple = Meeple.Ex }
+
+            let opponent =
+                { Participant.PlayerId = Guid.NewGuid()
+                  Meeple = Meeple.Oh }
+
+            let newGm =
+                GameModel.init (TwoPlayers(participant, opponent))
+
             let newGm, cmd = newGm, Cmd.none
-            let m = { Size = 100, 100; GameModel = newGm; OpponentStatus = LocalAiGame; Hub = None; MyStatus = participant; GameId = 0 }
+
+            let m =
+                { Size = 100, 100
+                  GameModel = newGm
+                  OpponentStatus = LocalAiGame
+                  GameIdText = String.Empty
+                  Hub = None
+                  MyStatus = participant
+                  GameId = 0 }
+
             { model with GamePageModel = Some m }, (Cmd.map GamePageMsg cmd)
         | GoToMatchmakingGame ->
-            let participant = { Participant.PlayerId = Guid.NewGuid(); Meeple = Meeple.Ex } // Get this from "actual" player guid
+            let participant =
+                { Participant.PlayerId = Guid.NewGuid()
+                  Meeple = Meeple.Ex }
 
             let newGm = GameModel.init (OnePlayer participant)
             let newGm, cmd = newGm, Cmd.ofMsg ConnectToServer
-            let m = { Size = 100, 100; GameModel = newGm; OpponentStatus = LookingForGame; Hub = None; MyStatus = participant; GameId = 0 }
+
+            let m =
+                { Size = 100, 100
+                  GameModel = newGm
+                  OpponentStatus = LookingForGame
+                  GameIdText = String.Empty
+                  Hub = None
+                  MyStatus = participant
+                  GameId = 0 }
+
             { model with GamePageModel = Some m }, (Cmd.map GamePageMsg cmd)
 
         | GoToPrivateGame ->
             // TODO: This
-            let participant = { Participant.PlayerId = Guid.NewGuid(); Meeple = Meeple.Ex } // Get this from "actual" player guid
+            let participant =
+                { Participant.PlayerId = Guid.NewGuid()
+                  Meeple = Meeple.Ex }
 
             let newGm = GameModel.init (OnePlayer participant)
-            let newGm, cmd = newGm, Cmd.none
-            let m = { Size = 100, 100; GameModel = newGm; OpponentStatus = WaitingForPrivate -1; Hub = None; MyStatus = participant; GameId = 0 }
+            let newGm, cmd = newGm, Cmd.ofMsg ConnectToServer
+
+            let m =
+                { Size = 100, 100
+                  GameModel = newGm
+                  OpponentStatus = WaitingForPrivate None
+                  GameIdText = String.Empty
+                  Hub = None
+                  MyStatus = participant
+                  GameId = 0 }
+
             { model with GamePageModel = Some m }, (Cmd.map GamePageMsg cmd)
-        | GoToMainMenu ->
-            navigationMapper { model with GamePageModel = None }, Cmd.none
+        | GoToMainMenu -> navigationMapper { model with GamePageModel = None }, Cmd.none
 
     let getPages (allPages: Pages) =
         let mainMenuPage = allPages.MainMenuPage
         let gamePage = allPages.GamePage
-        
+
         match gamePage with
         | None -> [ mainMenuPage ]
         | Some gp -> [ mainMenuPage; gp ]
 
 
     let view (model: Model) dispatch =
-        let mainMenuPage = MainMenu.view model.MainMenuPageModel (MainMenuPageMsg >> dispatch)
-        let gamePage = 
+        let mainMenuPage =
+            MainMenu.view model.MainMenuPageModel (MainMenuPageMsg >> dispatch)
+
+        let gamePage =
             model.GamePageModel
-            |> Option.map (fun gpm ->
-                Game.view gpm (GamePageMsg >> dispatch)
-            )
-        
-        let allPages = 
+            |> Option.map (fun gpm -> Game.view gpm (GamePageMsg >> dispatch))
+
+        let allPages =
             { Pages.MainMenuPage = mainMenuPage
               GamePage = gamePage }
 
-        View.NavigationPage(
-            hasNavigationBar = false,
-            popped = (fun _ -> dispatch NavigationPopped),
-            pages = getPages allPages
-        )
+        View.NavigationPage
+            (hasNavigationBar = false, popped = (fun _ -> dispatch NavigationPopped), pages = getPages allPages)
 
     // Note, this declaration is needed if you enable LiveUpdate
-    let program =
-        Program.mkProgram init update view
+    let program = Program.mkProgram init update view
 
 type App() as app =
     inherit Application()
@@ -161,7 +218,8 @@ type App() as app =
     //
     //do runner.EnableLiveUpdate()
 #endif
-  
+
+//Cmd.SignalR.send model.Hub (Action.QuitGame (model.GameId, model.MyStatus.PlayerId)), GameExternalMsg.NavigateToMainMenu
 
 // Uncomment this code to save the application state to app.Properties using Newtonsoft.Json
 // See https://fsprojects.github.io/Fabulous/Fabulous.XamarinForms/models.html#saving-application-state for further  instructions.
