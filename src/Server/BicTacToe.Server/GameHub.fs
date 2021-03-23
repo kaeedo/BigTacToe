@@ -22,16 +22,19 @@ module GameHub =
         let manager =
             hubContext.Services.GetService<GameManager.Manager>()
             
-        let sendMessage = sendMessage hubContext 
+        let sendMessage = sendMessage hubContext
+        printfn "Received: {%O}" msg
 
         match msg with
         | Action.OnConnect playerId ->
+            // TODO: move to invoke
             printfn "%A has connected" playerId
             task {
                 do! hubContext.Groups.AddToGroupAsync(hubContext.Context.ConnectionId, playerId.ToString())
                 do! sendMessage playerId Response.Connected
             } :> Task
         | Action.SearchOrCreateGame playerId ->
+            // TODO: move to invoke
             let tryGetGame =
                 manager.JoinRandomGame >=> manager.GetGame
 
@@ -49,6 +52,7 @@ module GameHub =
                 Task.FromResult(()) :> Task
             | Error _ -> Task.FromResult(()) :> Task // TODO: FIX THIS
         | Action.MakeMove (gameId, gameMove) ->
+            // TODO: move to invoke// TODO: move to invoke
             printfn "Received make move: %A" (gameId, gameMove)
 
             match manager.PlayPosition gameId gameMove with
@@ -76,10 +80,12 @@ module GameHub =
                     sendMessage p.PlayerId Response.UnrecoverableError
                 | NoOne -> Task.FromResult(()) :> Task
         | Action.HostPrivateGame playerId ->
+            // TODO: move to invoke
             let newGameId = manager.StartPrivateGame playerId
 
             sendMessage playerId (Response.PrivateGameReady newGameId)
         | Action.JoinPrivateGame (gameId, playerId) ->
+            // TODO: move to invoke
             let tryJoinGame =
                 manager.JoinPrivateGame playerId
                 >=> manager.GetGame

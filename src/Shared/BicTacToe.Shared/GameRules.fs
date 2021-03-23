@@ -121,7 +121,7 @@ module GameRules =
             let! touchedSubBoard =
                 let sb =
                     model.Board.SubBoards.[subBoardIndexI, subBoardIndexJ]
-
+                    
                 match sb.IsPlayable && sb.Winner.IsNone with
                 | true -> Some sb
                 | false -> None
@@ -135,10 +135,11 @@ module GameRules =
             return newBoard model touchedSubBoard touchedSubTile
         }
 
-    let updateModel model subBoards =
+    let updateModel model subBoards gameMove =
         { model with
               Board =
                   { model.Board with
                         SubBoards = subBoards
                         Winner = calculateGameWinner subBoards model.CurrentPlayer }
-              CurrentPlayer = togglePlayer model }
+              CurrentPlayer = togglePlayer model
+              GameMoves = gameMove :: model.GameMoves }

@@ -34,7 +34,13 @@ module AiPlayer =
                 let (Some subBoards) =
                     GameRules.tryPlayPosition model tileIndex
 
-                playOut <| GameRules.updateModel model subBoards
+                let positionPlayed = (sbi, sbj), (ti, tj)
+
+                let gameMove =
+                    { GameMove.Player = model.CurrentPlayer
+                      PositionPlayed = positionPlayed }
+
+                playOut (GameRules.updateModel model subBoards gameMove)
 
         playOut model
 
@@ -73,9 +79,14 @@ module AiPlayer =
                             seq {
                                 for _ in 0 .. 50 do
                                     async {
+                                        let positionPlayed = (sbi, sbj), (ti, tj)
+
+                                        let gameMove =
+                                            { GameMove.Player = model.CurrentPlayer
+                                              PositionPlayed = positionPlayed }
+                                            
                                         return
-                                            playOutGame
-                                            <| GameRules.updateModel model subBoards
+                                            playOutGame (GameRules.updateModel model subBoards gameMove)
                                     }
                             }
                             |> Async.Parallel

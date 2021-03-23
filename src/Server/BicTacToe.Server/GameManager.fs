@@ -183,7 +183,7 @@ module GameManager =
                                         let! _ =
                                             if g.CurrentPlayer <> gameMove.Player then None else Some g.CurrentPlayer
 
-                                        let newGameModel = GameRules.updateModel g subBoards
+                                        let newGameModel = GameRules.updateModel g subBoards gameMove
 
                                         rc.Reply(Result.Ok(newGameModel, gameMove))
 

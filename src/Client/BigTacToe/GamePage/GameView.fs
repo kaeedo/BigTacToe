@@ -22,28 +22,44 @@ module internal Game =
                 | Draw -> "It's a tie game. Nobody wins"
                 | Participant p -> sprintf "%s wins!" (p.ToString())
 
+        model.StackLayout.TryValue
+        |> Option.iter (fun ref ->
+            let cb: System.Action<float, bool> =
+                System.Action<float, bool>(fun a b -> dispatch <| ShouldDrawLatestMove false)
+                
+            let animation =
+                Animation((fun f -> dispatch (SetAnimationPercent f)), 0.0, 1.0, Easing.CubicInOut)
+
+            if (not <| ref.AnimationIsRunning("DrawingMeepleOh"))
+               && model.ShouldDrawLatestMove then
+                animation.Commit(ref, "DrawingMeepleOh", 16u, 1000u, Easing.CubicInOut, cb))
+
 
         let gameBoard =
             View.StackLayout
-                (children =
-                    [ dependsOn (model.Size, gm.Board) (fun _ (size, board) ->
-                          View.SKCanvasView
-                              (invalidate = true,
-                               enableTouchEvents = true,
-                               verticalOptions = LayoutOptions.FillAndExpand,
-                               horizontalOptions = LayoutOptions.FillAndExpand,
-                               paintSurface =
-                                   (fun args ->
-                                       dispatch <| ResizeCanvas args.Info.Size
+                (ref = model.StackLayout,
+                 children =
+                     [ dependsOn (model.Size, gm.Board, model.AnimationPercent) (fun _ (size, board, percent) ->
+                           View.SKCanvasView
+                               (invalidate = true,
+                                enableTouchEvents = true,
+                                verticalOptions = LayoutOptions.FillAndExpand,
+                                horizontalOptions = LayoutOptions.FillAndExpand,
+                                paintSurface =
+                                    (fun args ->
+                                        dispatch <| ResizeCanvas args.Info.Size
 
-                                       args.Surface.Canvas.Clear()
+                                        args.Surface.Canvas.Clear()
 
-                                       Render.drawBoard args model
-                                       Render.drawMeeple args model),
-                               touch =
-                                   (fun args ->
-                                       if args.InContact
-                                       then dispatch (SKSurfaceTouched args.Location)))) ])
+                                        Render.drawBoard args model
+                                        Render.drawMeeple args model
+                                        Render.animateLatestMove args model),
+                                touch =
+                                    (fun args ->
+                                        if args.InContact
+                                        then dispatch (SKSurfaceTouched args.Location)))) ])
+
+
 
         let multiplayerText model =
             let iAm =
@@ -141,11 +157,14 @@ module internal Game =
                                                   View
                                                       .Entry(placeholder = "Game ID",
                                                              keyboard = Keyboard.Numeric,
-                                                             textChanged = (fun args -> dispatch <| EnterGameId args.NewTextValue),
+                                                             textChanged =
+                                                                 (fun args -> dispatch <| EnterGameId args.NewTextValue),
                                                              completed = fun text -> dispatch <| JoinPrivateGame text)
                                                       .Row(1)
                                                   View
-                                                      .Button(text = "Join", command = fun () -> dispatch <| JoinPrivateGame model.GameIdText)
+                                                      .Button(text = "Join",
+                                                              command =
+                                                                  fun () -> dispatch <| JoinPrivateGame model.GameIdText)
                                                       .Row(1)
                                                       .Column(1) ]))
                                            .Row(2)

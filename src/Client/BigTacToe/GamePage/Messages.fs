@@ -27,6 +27,12 @@ module internal Messages =
         let gm = model.GameModel
 
         match msg with
+        | ShouldDrawLatestMove shouldDraw ->
+            { model with
+                  ShouldDrawLatestMove = shouldDraw },
+            Cmd.none,
+            GameExternalMsg.NoOp
+        | SetAnimationPercent f -> { model with AnimationPercent = f }, Cmd.none, GameExternalMsg.NoOp
         | ConnectToServer ->
             let cmd =
                 Cmd.SignalR.connect RegisterHub (fun hub ->
@@ -68,7 +74,11 @@ module internal Messages =
 
             match subBoards with
             | Some sb ->
-                let newGm = GameRules.updateModel gm sb
+                let gameMove =
+                    { GameMove.Player = gm.CurrentPlayer
+                      PositionPlayed = positionPlayed }
+
+                let newGm = GameRules.updateModel gm sb gameMove
                 { model with GameModel = newGm }, Cmd.none, GameExternalMsg.NoOp
             | None -> model, Cmd.none, GameExternalMsg.NoOp // TODO: FIX THIS
 
@@ -95,7 +105,7 @@ module internal Messages =
                 model, cmd, GameExternalMsg.NoOp
             else
                 model, Cmd.none, GameExternalMsg.NoOp
-                
+
         | SKSurfaceTouched point when (model.OpponentStatus = LocalGame)
                                       && gm.Board.Winner.IsNone ->
             let globalTileIndex =
@@ -109,26 +119,20 @@ module internal Messages =
                 (subBoardIndexI, subBoardIndexJ), (tileIndexI % 3, tileIndexJ % 3)
 
             let gameMove =
-                { GameMove.Player = model.GameModel.CurrentPlayer
+                { GameMove.Player = model.MyStatus
                   PositionPlayed = positionPlayed }
 
             match GameRules.tryPlayPosition gm globalTileIndex with
             | None -> (model, Cmd.none, GameExternalMsg.NoOp)
             | Some subBoard ->
-                let newGm = GameRules.updateModel gm subBoard
+                let newGm =
+                    GameRules.updateModel gm subBoard gameMove
 
-                let isGameOver = newGm.Board.Winner.IsSome
-
-                let command =
-                    match model.OpponentStatus with
-                    | Joined _ -> Cmd.SignalR.send model.Hub (Action.MakeMove(model.GameId, gameMove))
-                    | LocalAiGame ->
-                        if isGameOver
-                        then Cmd.none
-                        else Cmd.ofAsyncMsg <| AiPlayer.playPosition newGm
-                    | _ -> Cmd.none
-
-                ({ model with GameModel = newGm }, command, GameExternalMsg.NoOp)
+                ({ model with
+                       GameModel = newGm
+                       ShouldDrawLatestMove = true },
+                 Cmd.none,
+                 GameExternalMsg.NoOp)
         | SKSurfaceTouched point when (model.OpponentStatus <> LocalGame)
                                       && (gm.CurrentPlayer.PlayerId = model.MyStatus.PlayerId)
                                       && gm.Board.Winner.IsNone ->
@@ -149,7 +153,8 @@ module internal Messages =
             match GameRules.tryPlayPosition gm globalTileIndex with
             | None -> (model, Cmd.none, GameExternalMsg.NoOp)
             | Some subBoard ->
-                let newGm = GameRules.updateModel gm subBoard
+                let newGm =
+                    GameRules.updateModel gm subBoard gameMove
 
                 let isGameOver = newGm.Board.Winner.IsSome
 
@@ -162,7 +167,11 @@ module internal Messages =
                         else Cmd.ofAsyncMsg <| AiPlayer.playPosition newGm
                     | _ -> Cmd.none
 
-                ({ model with GameModel = newGm }, command, GameExternalMsg.NoOp)
+                ({ model with
+                       GameModel = newGm
+                       ShouldDrawLatestMove = true },
+                 command,
+                 GameExternalMsg.NoOp)
         | GoToMainMenu ->
             if model.GameModel.Board.Winner.IsSome
             then model, Cmd.none, GameExternalMsg.NavigateToMainMenu

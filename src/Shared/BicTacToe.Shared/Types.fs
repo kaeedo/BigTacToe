@@ -39,10 +39,17 @@ type Players =
     | NoOne
     | OnePlayer of Participant
     | TwoPlayers of Participant * Participant
+    
+type PositionPlayed = (int * int) * (int * int) //SubBoard i,j Tile i,j
+
+type GameMove =
+    { Player: Participant
+      PositionPlayed: PositionPlayed }
 
 type GameModel =
     { Players: Players
       CurrentPlayer: Participant
+      GameMoves: GameMove list
       Board: Board }
     static member init participants =
         let initBoard =
@@ -71,13 +78,8 @@ type GameModel =
 
         { GameModel.Players = participants
           CurrentPlayer = startingPlayer
+          GameMoves = []
           Board = initBoard }
-
-type PositionPlayed = (int * int) * (int * int) //SubBoard i,j Tile i,j
-
-type GameMove =
-    { Player: Participant
-      PositionPlayed: PositionPlayed }
 
 // Game metadata
 

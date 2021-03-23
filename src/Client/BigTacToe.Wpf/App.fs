@@ -15,7 +15,10 @@ module Main =
 
         let app = new System.Windows.Application()
         Forms.Init()
-        let window = MainWindow() 
+        let window = MainWindow()
+        window.Height <- 1280.0
+        window.Width <- 720.0
+        
         window.LoadApplication(BigTacToe.App())
 
         app.Run(window)
