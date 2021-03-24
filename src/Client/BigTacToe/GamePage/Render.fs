@@ -6,7 +6,7 @@ open SkiaSharp.Views.Forms
 
 [<RequireQualifiedAccess>]
 module internal Render =
-    module private Colors =
+    module Colors =
         let largeGridDivider = SKColor.Parse("#00F")
         let oddGridBackground = SKColor.Parse("#fff")
         let evenGridBackground = SKColor.Parse("#ececec")
@@ -20,19 +20,44 @@ module internal Render =
     let private largeStroke = 5.0f
     let private smallStroke = 2.0f
 
-    let private animateDrawEx (color: SKColor) (stroke: float32) (canvas: SKCanvas) (rect: SKRect) =
+    let private animateDrawEx (color: SKColor) (stroke: float32) (canvas: SKCanvas) (rect: SKRect) (amount: float) =
         use paint =
             new SKPaint(Color = color, StrokeWidth = stroke, IsStroke = true)
 
         let paddingHorizontal = rect.Width * 0.1f
         let paddingVertical = rect.Height * 0.1f
-        let startX = rect.Left + paddingHorizontal
-        let startY = rect.Top + paddingVertical
-        let endX = rect.Right - paddingHorizontal
-        let endY = rect.Bottom - paddingVertical
 
-        canvas.DrawLine(startX, startY, endX, endY, paint)
-        canvas.DrawLine(endX, startY, startX, endY, paint)
+        let line1Percent =
+            let amount = float32 amount
+            if amount < 0.5f then amount * 2.0f else 1.0f
+
+        let line2Percent =
+            let amount = float32 amount
+            (amount - 0.5f) * 2.0f
+
+        let left = rect.Left + paddingHorizontal
+        let top = rect.Top + paddingVertical
+        let right = rect.Right - paddingHorizontal
+        let bottom = rect.Bottom - paddingVertical
+
+        let line1 =
+            {| StartX = left
+               StartY = top
+               EndX = left + ((right - left) * line1Percent)
+               EndY = top + ((bottom - top) * line1Percent) |}
+
+        let line2 =
+            {| StartX = right
+               StartY = top
+               EndX = right - ((right - left) * line2Percent)
+               EndY = top + ((bottom - top) * line2Percent) |}
+
+        canvas.DrawLine(line1.StartX, line1.StartY, line1.EndX, line1.EndY, paint)
+        
+        System.Diagnostics.Debug.WriteLine(sprintf "amount: %f, 1: %f, 2: %f" amount line1Percent line2Percent)
+    
+        if amount >= 0.5
+        then canvas.DrawLine(line2.StartX, line2.StartY, line2.EndX, line2.EndY, paint)
 
     let private animateDrawOh (color: SKColor) (stroke: float32) (canvas: SKCanvas) (rect: SKRect) (amount: float) =
         use paint =
@@ -214,25 +239,23 @@ module internal Render =
     let drawMeeple (args: SKPaintSurfaceEventArgs) (clientGameModel: ClientGameModel) =
         use canvas = args.Surface.Canvas
 
-        match clientGameModel.GameModel.GameMoves with
-        | [] -> ()
-        | _ :: tail ->
-            tail
-            |> List.iter (fun gameMove ->
-                let tileRect =
-                    getTileRect gameMove.PositionPlayed clientGameModel.Size
-
-                if gameMove.Player.Meeple = Meeple.Ex
-                then drawEx Colors.meepleEx 5.0f canvas tileRect
-                else drawOh Colors.meepleOh 3.0f canvas tileRect)
-
-    let animateLatestMove (args: SKPaintSurfaceEventArgs) (clientGameModel: ClientGameModel) =
-        use canvas = args.Surface.Canvas
-
         clientGameModel.GameModel.GameMoves
-        |> List.tryHead
-        |> Option.iter (fun latest ->
+        |> Seq.except
+            (clientGameModel.AnimatingMeeples
+             |> List.map (fun am -> am.GameMove))
+        |> Seq.iter (fun gameMove ->
             let tileRect =
-                getTileRect latest.PositionPlayed clientGameModel.Size
+                getTileRect gameMove.PositionPlayed clientGameModel.Size
 
-            animateDrawOh Colors.meepleOh 3.0f canvas tileRect clientGameModel.AnimationPercent)
+            if gameMove.Player.Meeple = Meeple.Ex
+            then drawEx Colors.meepleEx 5.0f canvas tileRect
+            else drawOh Colors.meepleOh 3.0f canvas tileRect)
+
+        clientGameModel.AnimatingMeeples
+        |> List.iter (fun am ->
+            let tileRect =
+                getTileRect am.GameMove.PositionPlayed clientGameModel.Size
+
+            match am.GameMove.Player.Meeple with
+            | Meeple.Oh -> animateDrawOh Colors.meepleOh 3.0f canvas tileRect am.AnimationPercent
+            | Meeple.Ex -> animateDrawEx Colors.meepleEx 5.0f canvas tileRect am.AnimationPercent)

@@ -5,7 +5,6 @@ open SkiaSharp
 open BigTacToe.Shared
 open BigTacToe.Shared.SignalRHub
 open Fable.SignalR.Elmish
-open Xamarin.Forms
 
 type OpponentStatus =
     | LocalGame
@@ -15,15 +14,18 @@ type OpponentStatus =
     | Joined of Participant
     | Quit
 
+type AnimatingMeeple =
+    { GameMove: GameMove
+      AnimationPercent: float }
+
 type ClientGameModel =
     { Size: int * int
       OpponentStatus: OpponentStatus
-      StackLayout: ViewRef<StackLayout>
+      Canvas: ViewRef<Views.Forms.SKCanvasView>
       GameId: int
       GameIdText: string
       MyStatus: Participant
-      ShouldDrawLatestMove: bool
-      AnimationPercent: float
+      AnimatingMeeples: AnimatingMeeple list
       Hub: Elmish.Hub<Action, Response> option
       GameModel: GameModel }
 
@@ -32,10 +34,10 @@ type GameMsg =
     | SKSurfaceTouched of SKPoint
     | OpponentPlayed of PositionPlayed
     | ConnectToServer
-    
-    | ShouldDrawLatestMove of bool
-    | SetAnimationPercent of float
-    
+
+    | RemoveAnimatingMeeple
+    | AnimatePercent of GameMove * float
+
     | StartPrivateGame
     | JoinPrivateGame of string
     | EnterGameId of string
@@ -46,7 +48,7 @@ type GameMsg =
     | GoToMainMenu
     | DisplayGameQuitAlert
     | GameQuitAlertResult of bool
-    
+
     | UnrecoverableError
     | ReturnToMainMenu
 

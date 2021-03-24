@@ -8,9 +8,8 @@
 
   <ItemGroup>
     <Compile Include="GamePage\Types.fs" />
-    
     <Compile Include="GamePage\AiPlayer.fs" />
-    
+    <Compile Include="GamePage\Animations.fs" />
     <Compile Include="GamePage\SignalRMessages.fs" />
     <Compile Include="GamePage\Messages.fs" />
     <Compile Include="GamePage\Render.fs" />
