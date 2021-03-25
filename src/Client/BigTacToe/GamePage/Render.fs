@@ -85,14 +85,14 @@ module internal Render =
              rect.Height - paddingVertical * 2.0f,
              paint)
 
-    let private drawWinner winner canvas rect amount =
+    let private drawWinner winner canvas rect amount multiplier =
         winner
         |> Option.iter (fun w ->
             match w with
             | Participant p ->
                 if p.Meeple = Meeple.Ex
-                then drawEx Colors.gameWinner 25.0f canvas rect amount
-                else drawOh Colors.gameWinner 15.0f canvas rect amount
+                then drawEx Colors.gameWinner (5.0f * multiplier) canvas rect amount
+                else drawOh Colors.gameWinner (3.0f * multiplier) canvas rect amount
             | Draw -> drawGameDraw canvas rect)
 
     let private calculateSubBoardRect i j (width, height) =
@@ -219,7 +219,7 @@ module internal Render =
             let subBoardRect =
                 SKRect(float32 left, float32 top, float32 right, float32 bottom)
 
-            drawWinner sb.Winner canvas subBoardRect 1.0f)
+            drawWinner sb.Winner canvas subBoardRect 1.0f 3.0f)
 
         let isAnimatingGameWinner =
             clientGameModel.Animations
@@ -231,7 +231,13 @@ module internal Render =
         if not isAnimatingGameWinner then
             let (width, height) = clientGameModel.Size
             let constrainedSize = if width > height then height else width
-            drawWinner board.Winner canvas (SKRect(0.0f, 0.0f, float32 constrainedSize, float32 constrainedSize)) 1.0f
+
+            drawWinner
+                board.Winner
+                canvas
+                (SKRect(0.0f, 0.0f, float32 constrainedSize, float32 constrainedSize))
+                1.0f
+                5.0f
 
     let drawMeeple (args: SKPaintSurfaceEventArgs) (clientGameModel: ClientGameModel) =
         use canvas = args.Surface.Canvas
@@ -270,6 +276,7 @@ module internal Render =
             | SubBoardWinner sb ->
                 match sb.Winner with
                 | None -> ()
+                | Some (Draw) -> ()
                 | Some (Participant p) ->
                     let (i, j) = sb.Index
                     // Extract this everywhere
@@ -282,7 +289,6 @@ module internal Render =
                     match p.Meeple with
                     | Meeple.Oh -> drawOh Colors.meepleOh 9.0f canvas subBoardRect drawingAnimation.AnimationPercent
                     | Meeple.Ex -> drawEx Colors.meepleEx 15.0f canvas subBoardRect drawingAnimation.AnimationPercent
-                | Some (Draw) -> ()
             | Winner boardWinner ->
                 let (width, height) = clientGameModel.Size
                 let constrainedSize = if width > height then height else width
@@ -291,4 +297,5 @@ module internal Render =
                     (Some boardWinner)
                     canvas
                     (SKRect(0.0f, 0.0f, float32 constrainedSize, float32 constrainedSize))
-                    drawingAnimation.AnimationPercent)
+                    drawingAnimation.AnimationPercent
+                    5.0f)
