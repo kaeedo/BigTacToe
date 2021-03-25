@@ -72,26 +72,18 @@ module internal Messages =
                 let gameMove =
                     { GameMove.Player = gm.CurrentPlayer
                       PositionPlayed = positionPlayed }
-                    
-                let drawingAnimation =
-                    { DrawingAnimation.Drawing = GameMove gameMove
-                      AnimationPercent = 0.0 }
-                    
-                let animation =
-                    match gameMove.Player.Meeple with
-                    | Meeple.Ex -> Animations.animateEx
-                    | Meeple.Oh -> Animations.animateOh
-                    
-                let command = Cmd.ofSub (fun dispatch -> animation model (GameMove gameMove) (AnimationMessage >> dispatch))
 
                 let newGm = GameRules.updateModel gm sb gameMove
 
+                let animations, commands =
+                    Animations.getAnimations model newGm gameMove
+
                 let model =
                     { model with
-                       GameModel = newGm
-                       Animations = drawingAnimation :: model.Animations }
+                          GameModel = newGm
+                          Animations = animations }
 
-                model, command, GameExternalMsg.NoOp
+                model, Cmd.batch commands, GameExternalMsg.NoOp
             | None -> model, Cmd.none, GameExternalMsg.NoOp // TODO: FIX THIS
 
         | StartPrivateGame ->
@@ -139,22 +131,14 @@ module internal Messages =
             | Some subBoard ->
                 let newGm =
                     GameRules.updateModel gm subBoard gameMove
-                    
-                let drawingAnimation =
-                    { DrawingAnimation.Drawing = GameMove gameMove
-                      AnimationPercent = 0.0 }
-                    
-                let animation =
-                    match gameMove.Player.Meeple with
-                    | Meeple.Ex -> Animations.animateEx
-                    | Meeple.Oh -> Animations.animateOh
-                    
-                let command = Cmd.ofSub (fun dispatch -> animation model (GameMove gameMove) (AnimationMessage >> dispatch))
+
+                let animations, commands =
+                    Animations.getAnimations model newGm gameMove
 
                 ({ model with
                        GameModel = newGm
-                       Animations = drawingAnimation :: model.Animations },
-                 command,
+                       Animations = animations },
+                 Cmd.batch commands,
                  GameExternalMsg.NoOp)
         | SKSurfaceTouched point when (model.OpponentStatus <> LocalGame)
                                       && (gm.CurrentPlayer.PlayerId = model.MyStatus.PlayerId)
@@ -181,6 +165,9 @@ module internal Messages =
 
                 let isGameOver = newGm.Board.Winner.IsSome
 
+                let animations, commands =
+                    Animations.getAnimations model newGm gameMove
+
                 let command =
                     match model.OpponentStatus with
                     | Joined _ -> Cmd.SignalR.send model.Hub (Action.MakeMove(model.GameId, gameMove))
@@ -190,22 +177,11 @@ module internal Messages =
                         else Cmd.ofAsyncMsg <| AiPlayer.playPosition newGm
                     | _ -> Cmd.none
 
-                let drawingAnimation =
-                    { DrawingAnimation.Drawing = GameMove gameMove
-                      AnimationPercent = 0.0 }
-                    
-                let animation =
-                    match gameMove.Player.Meeple with
-                    | Meeple.Ex -> Animations.animateEx
-                    | Meeple.Oh -> Animations.animateOh
-                    
-                let command =
-                    Cmd.batch [ command
-                                Cmd.ofSub (fun dispatch -> animation model (GameMove gameMove) (AnimationMessage >> dispatch)) ]
+                let command = Cmd.batch (command :: commands)
 
                 ({ model with
                        GameModel = newGm
-                       Animations = drawingAnimation :: model.Animations },
+                       Animations = animations },
                  command,
                  GameExternalMsg.NoOp)
         | GoToMainMenu ->

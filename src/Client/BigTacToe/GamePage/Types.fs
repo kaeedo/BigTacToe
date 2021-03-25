@@ -17,15 +17,15 @@ type OpponentStatus =
 type Drawing =
     | GameMove of GameMove
     | SubBoardWinner of SubBoard
-    | Winner of Meeple
+    | Winner of BoardWinner
     
 type AnimationMessage =
     | RemoveAnimation
-    | AnimatePercent of Drawing * float
+    | AnimatePercent of Drawing * float32
 
 type DrawingAnimation =
     { Drawing: Drawing
-      AnimationPercent: float }
+      AnimationPercent: float32 }
 
 type ClientGameModel =
     { Size: int * int
