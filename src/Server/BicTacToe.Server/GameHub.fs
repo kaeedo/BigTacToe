@@ -118,7 +118,7 @@ module GameHub =
 
     let private config =
         { SignalR.Config.Default<Action, Response>() with
-              UseMessagePack = false
+              UseMessagePack = true
               OnConnected = None
               OnDisconnected = None }
 
