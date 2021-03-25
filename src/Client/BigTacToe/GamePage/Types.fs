@@ -14,8 +14,17 @@ type OpponentStatus =
     | Joined of Participant
     | Quit
 
-type AnimatingMeeple =
-    { GameMove: GameMove
+type Drawing =
+    | GameMove of GameMove
+    | SubBoardWinner of SubBoard
+    | Winner of Meeple
+    
+type AnimationMessage =
+    | RemoveAnimation
+    | AnimatePercent of Drawing * float
+
+type DrawingAnimation =
+    { Drawing: Drawing
       AnimationPercent: float }
 
 type ClientGameModel =
@@ -25,7 +34,7 @@ type ClientGameModel =
       GameId: int
       GameIdText: string
       MyStatus: Participant
-      AnimatingMeeples: AnimatingMeeple list
+      Animations: DrawingAnimation list
       Hub: Elmish.Hub<Action, Response> option
       GameModel: GameModel }
 
@@ -35,8 +44,7 @@ type GameMsg =
     | OpponentPlayed of PositionPlayed
     | ConnectToServer
 
-    | RemoveAnimatingMeeple
-    | AnimatePercent of GameMove * float
+    | AnimationMessage of AnimationMessage
 
     | StartPrivateGame
     | JoinPrivateGame of string

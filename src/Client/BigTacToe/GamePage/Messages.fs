@@ -27,24 +27,6 @@ module internal Messages =
         let gm = model.GameModel
 
         match msg with
-        | RemoveAnimatingMeeple ->
-            let animatingMeeples =
-                model.AnimatingMeeples
-                |> List.filter (fun am -> am.AnimationPercent >= 1.0)
-
-            { model with
-                  AnimatingMeeples = animatingMeeples },
-            Cmd.none,
-            GameExternalMsg.NoOp
-        | AnimatePercent (gm, percent) ->
-            let animatingMeeples =
-                model.AnimatingMeeples
-                |> List.map (fun am -> if am.GameMove = gm then { am with AnimationPercent = percent } else am)
-
-            { model with
-                  AnimatingMeeples = animatingMeeples },
-            Cmd.none,
-            GameExternalMsg.NoOp
         | ConnectToServer ->
             let cmd =
                 Cmd.SignalR.connect RegisterHub (fun hub ->
@@ -68,6 +50,7 @@ module internal Messages =
 
             { model with Hub = hub }, cmd, GameExternalMsg.NoOp
         | SignalRMessage response -> SignalRMessages.handleSignalRMessage model response
+        | AnimationMessage message -> AnimationMessages.handleAnimationMessage model message
         | ResizeCanvas size ->
             let smallerDimension =
                 if size.Width < size.Height then size.Width else size.Height
@@ -90,8 +73,8 @@ module internal Messages =
                     { GameMove.Player = gm.CurrentPlayer
                       PositionPlayed = positionPlayed }
                     
-                let animatingMeeple =
-                    { AnimatingMeeple.GameMove = gameMove
+                let drawingAnimation =
+                    { DrawingAnimation.Drawing = GameMove gameMove
                       AnimationPercent = 0.0 }
                     
                 let animation =
@@ -99,14 +82,14 @@ module internal Messages =
                     | Meeple.Ex -> Animations.animateEx
                     | Meeple.Oh -> Animations.animateOh
                     
-                let command = Cmd.ofSub (fun dispatch -> animation model gameMove dispatch)
+                let command = Cmd.ofSub (fun dispatch -> animation model (GameMove gameMove) (AnimationMessage >> dispatch))
 
                 let newGm = GameRules.updateModel gm sb gameMove
 
                 let model =
                     { model with
                        GameModel = newGm
-                       AnimatingMeeples = animatingMeeple :: model.AnimatingMeeples }
+                       Animations = drawingAnimation :: model.Animations }
 
                 model, command, GameExternalMsg.NoOp
             | None -> model, Cmd.none, GameExternalMsg.NoOp // TODO: FIX THIS
@@ -157,8 +140,8 @@ module internal Messages =
                 let newGm =
                     GameRules.updateModel gm subBoard gameMove
                     
-                let animatingMeeple =
-                    { AnimatingMeeple.GameMove = gameMove
+                let drawingAnimation =
+                    { DrawingAnimation.Drawing = GameMove gameMove
                       AnimationPercent = 0.0 }
                     
                 let animation =
@@ -166,11 +149,11 @@ module internal Messages =
                     | Meeple.Ex -> Animations.animateEx
                     | Meeple.Oh -> Animations.animateOh
                     
-                let command = Cmd.ofSub (fun dispatch -> animation model gameMove dispatch)
+                let command = Cmd.ofSub (fun dispatch -> animation model (GameMove gameMove) (AnimationMessage >> dispatch))
 
                 ({ model with
                        GameModel = newGm
-                       AnimatingMeeples = animatingMeeple :: model.AnimatingMeeples },
+                       Animations = drawingAnimation :: model.Animations },
                  command,
                  GameExternalMsg.NoOp)
         | SKSurfaceTouched point when (model.OpponentStatus <> LocalGame)
@@ -207,8 +190,8 @@ module internal Messages =
                         else Cmd.ofAsyncMsg <| AiPlayer.playPosition newGm
                     | _ -> Cmd.none
 
-                let animatingMeeple =
-                    { AnimatingMeeple.GameMove = gameMove
+                let drawingAnimation =
+                    { DrawingAnimation.Drawing = GameMove gameMove
                       AnimationPercent = 0.0 }
                     
                 let animation =
@@ -218,11 +201,11 @@ module internal Messages =
                     
                 let command =
                     Cmd.batch [ command
-                                Cmd.ofSub (fun dispatch -> animation model gameMove dispatch) ]
+                                Cmd.ofSub (fun dispatch -> animation model (GameMove gameMove) (AnimationMessage >> dispatch)) ]
 
                 ({ model with
                        GameModel = newGm
-                       AnimatingMeeples = animatingMeeple :: model.AnimatingMeeples },
+                       Animations = drawingAnimation :: model.Animations },
                  command,
                  GameExternalMsg.NoOp)
         | GoToMainMenu ->

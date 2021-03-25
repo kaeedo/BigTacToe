@@ -53,9 +53,9 @@ module internal Render =
                EndY = top + ((bottom - top) * line2Percent) |}
 
         canvas.DrawLine(line1.StartX, line1.StartY, line1.EndX, line1.EndY, paint)
-        
+
         System.Diagnostics.Debug.WriteLine(sprintf "amount: %f, 1: %f, 2: %f" amount line1Percent line2Percent)
-    
+
         if amount >= 0.5
         then canvas.DrawLine(line2.StartX, line2.StartY, line2.EndX, line2.EndY, paint)
 
@@ -241,8 +241,14 @@ module internal Render =
 
         clientGameModel.GameModel.GameMoves
         |> Seq.except
-            (clientGameModel.AnimatingMeeples
-             |> List.map (fun am -> am.GameMove))
+            (clientGameModel.Animations
+             |> Seq.filter (fun a ->
+                 match a.Drawing with
+                 | GameMove _ -> true
+                 | _ -> false)
+             |> Seq.map (fun am ->
+                 let (GameMove gm) = am.Drawing
+                 gm))
         |> Seq.iter (fun gameMove ->
             let tileRect =
                 getTileRect gameMove.PositionPlayed clientGameModel.Size
@@ -251,11 +257,14 @@ module internal Render =
             then drawEx Colors.meepleEx 5.0f canvas tileRect
             else drawOh Colors.meepleOh 3.0f canvas tileRect)
 
-        clientGameModel.AnimatingMeeples
-        |> List.iter (fun am ->
-            let tileRect =
-                getTileRect am.GameMove.PositionPlayed clientGameModel.Size
+        clientGameModel.Animations
+        |> List.iter (fun drawingAnimation ->
+            match drawingAnimation.Drawing with
+            | GameMove gm ->
+                let tileRect =
+                    getTileRect gm.PositionPlayed clientGameModel.Size
 
-            match am.GameMove.Player.Meeple with
-            | Meeple.Oh -> animateDrawOh Colors.meepleOh 3.0f canvas tileRect am.AnimationPercent
-            | Meeple.Ex -> animateDrawEx Colors.meepleEx 5.0f canvas tileRect am.AnimationPercent)
+                match gm.Player.Meeple with
+                | Meeple.Oh -> animateDrawOh Colors.meepleOh 3.0f canvas tileRect drawingAnimation.AnimationPercent
+                | Meeple.Ex -> animateDrawEx Colors.meepleEx 5.0f canvas tileRect drawingAnimation.AnimationPercent
+            | _ -> ())

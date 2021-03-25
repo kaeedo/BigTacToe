@@ -25,7 +25,7 @@ module internal Game =
         let gameBoard =
             View.StackLayout
                 (children =
-                    [ dependsOn (model.Size, gm.Board, model.AnimatingMeeples) (fun _ _ ->
+                    [ dependsOn (model.Size, gm.Board, model.Animations) (fun _ _ ->
                           View.SKCanvasView
                               (invalidate = true,
                                ref = model.Canvas,
