@@ -3,7 +3,6 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
-      <LangVersion>4.7</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>

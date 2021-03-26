@@ -2,30 +2,66 @@
 
 open BigTacToe.Shared
 open SkiaSharp
+open SkiaSharp
 open SkiaSharp.Views.Forms
 
 [<RequireQualifiedAccess>]
 module internal Render =
     module Colors =
+        /// https://paletton.com/#uid=74p1c0kkOllpJBznerGibeDfJ8a
+
         let largeGridDivider = SKColor.Parse("#00F")
         let oddGridBackground = SKColor.Parse("#fff")
         let evenGridBackground = SKColor.Parse("#ececec")
-        let highlight = SKColor.Parse("#ff6")
-        let tileBorder = SKColor.Parse("#000")
-        let meepleEx = SKColor.Parse("#F00")
-        let meepleOh = SKColor.Parse("#0A0")
+
+
+        let highlightLight = SKColor.Parse("#FFE832")
+        let highlightBrightened = SKColor.Parse("#DDCA3D")
+        let highlight = SKColor.Parse("#AA9E3C")
+        let highlightMuted = SKColor.Parse("#756D32")
+        let highlightDark = SKColor.Parse("#413D21")
+
+
+        let tileBorder = SKColor.Parse("#3F2022")
+
+        let meepleExLight = SKColor.Parse("#43DC2B")
+        let meepleExBrightened = SKColor.Parse("#44B632")
+        let meepleEx = SKColor.Parse("#3E8D31")
+        let meepleExMuted = SKColor.Parse("#31602A")
+        let meepleExDark = SKColor.Parse("#1F361B")
+
+        let meepleOhLight = SKColor.Parse("#6834BE")
+        let meepleOhBrightened = SKColor.Parse("#593396")
+        let meepleOh = SKColor.Parse("#493074")
+        let meepleOhMuted = SKColor.Parse("#36264F")
+        let meepleOhDark = SKColor.Parse("#20192C")
+
         let gameDraw = SKColor.Parse("#00F")
         let gameWinner = SKColor.Parse("#f00")
+
+    // #FA3140 Red + 2
+    // #D73B46 Red + 1
+    // #A63A42 Red
+    // #723136 Red - 1
+    // #3F2022 Red - 2
 
     let private largeStroke = 5.0f
     let private smallStroke = 2.0f
 
-    let private drawEx (color: SKColor) (stroke: float32) (canvas: SKCanvas) (rect: SKRect) (amount: float32) =
-        use paint =
-            new SKPaint(Color = color, StrokeWidth = stroke, IsStroke = true)
+    let private drawEx (color: SKColor)
+                       (multiplier: float32)
+                       (canvas: SKCanvas)
+                       (rect: SKRect)
+                       (amount: float32)
+                       (shouldBlur: bool)
+                       =
+        let strokeWidth = 7.0f
 
-        let paddingHorizontal = rect.Width * 0.1f
-        let paddingVertical = rect.Height * 0.1f
+        let paddingHorizontal =
+            rect.Width * (0.1f - (0.01f * multiplier))
+
+        let paddingVertical =
+            rect.Height * (0.1f - (0.01f * multiplier))
 
         let line1Percent =
             if amount < 0.5f then amount * 2.0f else 1.0f
@@ -48,18 +84,43 @@ module internal Render =
                StartY = top
                EndX = right - ((right - left) * line2Percent)
                EndY = top + ((bottom - top) * line2Percent) |}
+               
+        use paint =
+            new SKPaint(Color = color,
+                        StrokeWidth = strokeWidth * multiplier,
+                        IsStroke = true,
+                        IsAntialias = true,
+                        StrokeCap = SKStrokeCap.Round)
+
+        if shouldBlur
+        then paint.MaskFilter <- SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 5.0f)
 
         canvas.DrawLine(line1.StartX, line1.StartY, line1.EndX, line1.EndY, paint)
 
         if amount >= 0.5f
         then canvas.DrawLine(line2.StartX, line2.StartY, line2.EndX, line2.EndY, paint)
+        
 
-    let private drawOh (color: SKColor) (stroke: float32) (canvas: SKCanvas) (rect: SKRect) (amount: float32) =
+    let private drawOh (color: SKColor)
+                       (multiplier: float32)
+                       (canvas: SKCanvas)
+                       (rect: SKRect)
+                       (amount: float32)
+                       (shouldBlur: bool)
+                       =
+        let strokeWidth = 5.0f
+
         use paint =
-            new SKPaint(Color = color, StrokeWidth = stroke, IsStroke = true)
+            new SKPaint(Color = color, StrokeWidth = strokeWidth * multiplier, IsStroke = true, IsAntialias = true)
 
-        let paddingHorizontal = rect.Width * 0.1f
-        let paddingVertical = rect.Height * 0.1f
+        if shouldBlur
+        then paint.MaskFilter <- SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 5.0f)
+
+        let paddingHorizontal =
+            rect.Width * (0.1f - (0.01f * multiplier))
+
+        let paddingVertical =
+            rect.Height * (0.1f - (0.01f * multiplier))
 
         let rect =
             SKRect
@@ -69,7 +130,7 @@ module internal Render =
                  rect.Bottom - paddingVertical)
 
         let amount = 360.0f * amount
-        canvas.DrawArc(rect, 0.0f, amount, false, paint)
+        canvas.DrawArc(rect, -90.0f, -amount, false, paint)
 
     let private drawGameDraw (canvas: SKCanvas) (rect: SKRect) =
         use paint =
@@ -85,14 +146,14 @@ module internal Render =
              rect.Height - paddingVertical * 2.0f,
              paint)
 
-    let private drawWinner winner canvas rect amount multiplier =
+    let private drawWinner winner canvas rect amount multiplier shouldBlur =
         winner
         |> Option.iter (fun w ->
             match w with
             | Participant p ->
                 if p.Meeple = Meeple.Ex
-                then drawEx Colors.gameWinner (5.0f * multiplier) canvas rect amount
-                else drawOh Colors.gameWinner (3.0f * multiplier) canvas rect amount
+                then drawEx Colors.meepleEx (multiplier) canvas rect amount shouldBlur
+                else drawOh Colors.meepleOh (multiplier) canvas rect amount shouldBlur
             | Draw -> drawGameDraw canvas rect)
 
     let private calculateSubBoardRect i j (width, height) =
@@ -103,6 +164,18 @@ module internal Render =
         let bottom = top + height
 
         (left, top, right, bottom)
+        
+    let private calculateZoomedSubBoardRect i j (width, height) =
+        let zoomLevel = 1.1f
+        
+        let (width, height) = float32 width*zoomLevel, float32 height*zoomLevel
+        let (width, height) = width / 3.0f, height / 3.0f
+        let left = width * float32 i
+        let top = height * float32 j
+        let right = left + width
+        let bottom = top + height
+
+        (int left, int top, int right, int bottom)
 
     let private calculateTileRect (tileI, tileJ) (subBoardRect: SKRect) =
         let iInSubBoard = tileI % 3
@@ -143,44 +216,44 @@ module internal Render =
         let board = clientGameModel.GameModel.Board
         use canvas = args.Surface.Canvas
 
-        use paint =
-            new SKPaint(Color = Colors.largeGridDivider, StrokeWidth = largeStroke, IsStroke = true)
-
         use oddGridPaint =
             new SKPaint(Color = Colors.oddGridBackground)
 
         use evenGridPaint =
             new SKPaint(Color = Colors.evenGridBackground)
 
-        use smallPaint =
-            new SKPaint(Color = Colors.tileBorder, StrokeWidth = smallStroke, IsStroke = true)
-
-        use transparentPaint =
-            let p =
-                new SKPaint(Color = Colors.highlight.WithAlpha(80uy))
-            //p.MaskFilter <- SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 2.0f);
-            p
-
-        let isFreeMove =
+        let blurred, normal =
             board.SubBoards
             |> Seq.cast<SubBoard>
-            |> Seq.filter (fun sb -> sb.IsPlayable)
-            |> Seq.length > 1
+            |> Seq.toList
+            |> List.partition (fun sb -> board.Winner.IsSome || sb.Winner.IsSome)
 
-        board.SubBoards
-        |> Array2D.iteri (fun i j sb ->
-            // Extract this everywhere
-            let (left, top, right, bottom) =
-                calculateSubBoardRect i j clientGameModel.Size
-
+        let zoomLevel = 1.5f
+        
+        let drawSubBoard sb =
+            let i, j = sb.Index
+            
             let subBoardRect =
-                SKRect(float32 left, float32 top, float32 right, float32 bottom)
+                if sb.IsPlayable
+                then
+                    let (left, top, right, bottom) =
+                        calculateSubBoardRect i j (clientGameModel.Size)
+
+                    SKRect(float32 left, float32 top, float32 right, float32 bottom)
+                else
+                    let (left, top, right, bottom) =
+                        calculateSubBoardRect i j clientGameModel.Size
+                    SKRect(float32 left, float32 top, float32 right, float32 bottom)
 
             let isOddGrid = ((i + j) * (i + j)) % 2 = 0
 
-            // Draw sub board borders
-            //canvas.Scale(2.0f)
             canvas.DrawRect(subBoardRect, (if isOddGrid then oddGridPaint else evenGridPaint))
+
+            use smallPaint =
+                new SKPaint(Color = Colors.tileBorder, StrokeWidth = smallStroke, IsStroke = true)
+
+            if sb.Winner.IsSome
+            then smallPaint.MaskFilter <- SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 1f)
 
             sb.Tiles
             |> Array2D.iter (fun (globalIndex, _) ->
@@ -189,9 +262,9 @@ module internal Render =
 
                 canvas.DrawRect(tileRect, smallPaint))
 
-            // Draw playability grey out
-            if not isFreeMove && sb.IsPlayable
-            then canvas.DrawRect(subBoardRect, transparentPaint))
+        blurred |> Seq.iter (drawSubBoard)
+
+        normal |> Seq.iter (drawSubBoard)
 
     let drawWinners (args: SKPaintSurfaceEventArgs) (clientGameModel: ClientGameModel) =
         let board = clientGameModel.GameModel.Board
@@ -219,7 +292,9 @@ module internal Render =
             let subBoardRect =
                 SKRect(float32 left, float32 top, float32 right, float32 bottom)
 
-            drawWinner sb.Winner canvas subBoardRect 1.0f 3.0f)
+            let shouldBlur = board.Winner.IsSome
+
+            drawWinner sb.Winner canvas subBoardRect 1.0f 3.0f shouldBlur)
 
         let isAnimatingGameWinner =
             clientGameModel.Animations
@@ -238,6 +313,7 @@ module internal Render =
                 (SKRect(0.0f, 0.0f, float32 constrainedSize, float32 constrainedSize))
                 1.0f
                 5.0f
+                false
 
     let drawMeeple (args: SKPaintSurfaceEventArgs) (clientGameModel: ClientGameModel) =
         use canvas = args.Surface.Canvas
@@ -256,9 +332,54 @@ module internal Render =
             let tileRect =
                 getTileRect gameMove.PositionPlayed clientGameModel.Size
 
-            if gameMove.Player.Meeple = Meeple.Ex
-            then drawEx Colors.meepleEx 5.0f canvas tileRect 1.0f
-            else drawOh Colors.meepleOh 3.0f canvas tileRect 1.0f)
+            let shouldBlur =
+                let (sbi, sbj), _ = gameMove.PositionPlayed
+
+                clientGameModel.GameModel.Board.Winner.IsSome
+                || clientGameModel.GameModel.Board.SubBoards.[sbi, sbj]
+                    .Winner.IsSome
+
+            if gameMove.Player.Meeple = Meeple.Ex then
+                drawEx
+                    (if shouldBlur then Colors.meepleExMuted else Colors.meepleEx)
+                    1.0f
+                    canvas
+                    tileRect
+                    1.0f
+                    shouldBlur
+            else
+                drawOh
+                    (if shouldBlur then Colors.meepleOhMuted else Colors.meepleOh)
+                    1.0f
+                    canvas
+                    tileRect
+                    1.0f
+                    shouldBlur)
+
+    let drawHighlights (args: SKPaintSurfaceEventArgs) (clientGameModel: ClientGameModel) =
+        use canvas = args.Surface.Canvas
+        canvas.Scale(3.0f,3.0f, 50.0f, 50.0f)
+        ()
+//        use canvas = args.Surface.Canvas
+//        let board = clientGameModel.GameModel.Board
+//
+//        use highlightPaint =
+//            new SKPaint(Color = Colors.highlightLight.WithAlpha(80uy))
+//
+//        board.SubBoards
+//        |> Array2D.iteri (fun i j sb ->
+//            // Extract this everywhere
+//            let (left, top, right, bottom) =
+//                calculateSubBoardRect i j clientGameModel.Size
+//
+//            let subBoardRect =
+//                SKRect(float32 left, float32 top, float32 right, float32 bottom)
+//
+//            if sb.IsPlayable
+//            then canvas.DrawRect(subBoardRect, highlightPaint)
+//
+//            canvas.DrawRect
+//                (subBoardRect, new SKPaint(Color = Colors.tileBorder, StrokeWidth = largeStroke, IsStroke = true)))
 
     let startAnimations (args: SKPaintSurfaceEventArgs) (clientGameModel: ClientGameModel) =
         use canvas = args.Surface.Canvas
@@ -270,9 +391,11 @@ module internal Render =
                 let tileRect =
                     getTileRect gm.PositionPlayed clientGameModel.Size
 
+                let multiplier = 1.0f
+
                 match gm.Player.Meeple with
-                | Meeple.Oh -> drawOh Colors.meepleOh 3.0f canvas tileRect drawingAnimation.AnimationPercent
-                | Meeple.Ex -> drawEx Colors.meepleEx 5.0f canvas tileRect drawingAnimation.AnimationPercent
+                | Meeple.Oh -> drawOh Colors.meepleOh multiplier canvas tileRect drawingAnimation.AnimationPercent false
+                | Meeple.Ex -> drawEx Colors.meepleEx multiplier canvas tileRect drawingAnimation.AnimationPercent false
             | SubBoardWinner sb ->
                 match sb.Winner with
                 | None -> ()
@@ -286,9 +409,13 @@ module internal Render =
                     let subBoardRect =
                         SKRect(float32 left, float32 top, float32 right, float32 bottom)
 
+                    let multiplier = 3.0f
+
                     match p.Meeple with
-                    | Meeple.Oh -> drawOh Colors.meepleOh 9.0f canvas subBoardRect drawingAnimation.AnimationPercent
-                    | Meeple.Ex -> drawEx Colors.meepleEx 15.0f canvas subBoardRect drawingAnimation.AnimationPercent
+                    | Meeple.Oh ->
+                        drawOh Colors.meepleOh multiplier canvas subBoardRect drawingAnimation.AnimationPercent false
+                    | Meeple.Ex ->
+                        drawEx Colors.meepleEx multiplier canvas subBoardRect drawingAnimation.AnimationPercent false
             | Winner boardWinner ->
                 let (width, height) = clientGameModel.Size
                 let constrainedSize = if width > height then height else width
@@ -298,4 +425,5 @@ module internal Render =
                     canvas
                     (SKRect(0.0f, 0.0f, float32 constrainedSize, float32 constrainedSize))
                     drawingAnimation.AnimationPercent
-                    5.0f)
+                    5.0f
+                    false)
