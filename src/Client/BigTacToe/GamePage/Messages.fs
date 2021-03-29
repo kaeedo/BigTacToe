@@ -9,19 +9,42 @@ open Fable.SignalR.Elmish
 open Xamarin.Forms
 
 module internal Messages =
-    let private calculateGlobalTileIndex (size: int * int) (point: SKPoint) =
-        let (sizeX, sizeY) = size
-        let (pointX, pointY) = point.X, point.Y
+    let private zoomLevel = 0.97f
+    let private calculatePositionPlayed (size: int) (point: SKPoint) (offset: float32) =
+        let subBoardSize = size / 3
 
-        let x =
-            let segmentSize = float32 sizeX / 9.0f
-            int (pointX / segmentSize)
+        let rects =
+            Array2D.init 3 3 (fun i j ->
+                let left = subBoardSize * i
+                let top = subBoardSize * j
+                let right = left + subBoardSize
+                let bottom = top + subBoardSize
 
-        let y =
-            let segmentSize = float32 sizeY / 9.0f
-            int (pointY / segmentSize)
+                let rect =
+                    SKRect(float32 left + offset, float32 top + offset, float32 right + offset, float32 bottom + offset)
 
-        x, y
+                rect,
+                Array2D.init 3 3 (fun tileI tileJ ->
+                    let tileSize = rect.Width / 3.0f |> int
+
+                    let left = rect.Left + float32 (tileSize * tileI)
+                    let right = left + float32 tileSize
+                    let top = rect.Top + float32 (tileSize * tileJ)
+                    let bottom = top + float32 tileSize
+
+                    SKRect(left, top, right, bottom)))
+
+        let (sbi, sbj) =
+            rects
+            |> Array2D.findIndexBy (fun (r: SKRect, _) -> r.Contains(point))
+
+        let subBoardTiles = rects.[sbi, sbj] |> snd
+
+        let (ti, tj) =
+            subBoardTiles
+            |> Array2D.findIndexBy (fun (r: SKRect) -> r.Contains(point))
+
+        (sbi, sbj), (ti, tj)
 
     let update msg (model: ClientGameModel) =
         let gm = model.GameModel
@@ -56,7 +79,7 @@ module internal Messages =
                 if size.Width < size.Height then size.Width else size.Height
 
             { model with
-                  Size = (smallerDimension, smallerDimension) },
+                  Size = (float32 smallerDimension * zoomLevel) |> int },
             Cmd.none,
             GameExternalMsg.NoOp
         | OpponentPlayed positionPlayed ->
@@ -65,7 +88,8 @@ module internal Messages =
                 let (ti, tj) = snd positionPlayed
                 (ti + (sbi * 3)), (tj + (sbj * 3))
 
-            let subBoards = GameRules.tryPlayPosition gm tileIndex
+            let subBoards =
+                GameRules.tryPlayPosition gm positionPlayed
 
             match subBoards with
             | Some sb ->
@@ -112,21 +136,20 @@ module internal Messages =
 
         | SKSurfaceTouched point when (model.OpponentStatus = LocalGame)
                                       && gm.Board.Winner.IsNone ->
-            let globalTileIndex =
-                calculateGlobalTileIndex model.Size point
+            let offset =
+                let difference =
+                    (float32 model.Size / zoomLevel) - float32 model.Size
+
+                difference / 2.0f
 
             let positionPlayed =
-                let (tileIndexI, tileIndexJ) = globalTileIndex
-
-                let subBoardIndexI = tileIndexI / 3
-                let subBoardIndexJ = tileIndexJ / 3
-                (subBoardIndexI, subBoardIndexJ), (tileIndexI % 3, tileIndexJ % 3)
+                calculatePositionPlayed model.Size point offset
 
             let gameMove =
                 { GameMove.Player = model.GameModel.CurrentPlayer
                   PositionPlayed = positionPlayed }
 
-            match GameRules.tryPlayPosition gm globalTileIndex with
+            match GameRules.tryPlayPosition gm positionPlayed with
             | None -> (model, Cmd.none, GameExternalMsg.NoOp)
             | Some subBoard ->
                 let newGm =
@@ -143,21 +166,20 @@ module internal Messages =
         | SKSurfaceTouched point when (model.OpponentStatus <> LocalGame)
                                       && (gm.CurrentPlayer.PlayerId = model.MyStatus.PlayerId)
                                       && gm.Board.Winner.IsNone ->
-            let globalTileIndex =
-                calculateGlobalTileIndex model.Size point
+            let offset =
+                let difference =
+                    (float32 model.Size / zoomLevel) - float32 model.Size
+
+                difference / 2.0f
 
             let positionPlayed =
-                let (tileIndexI, tileIndexJ) = globalTileIndex
-
-                let subBoardIndexI = tileIndexI / 3
-                let subBoardIndexJ = tileIndexJ / 3
-                (subBoardIndexI, subBoardIndexJ), (tileIndexI % 3, tileIndexJ % 3)
+                calculatePositionPlayed model.Size point offset
 
             let gameMove =
                 { GameMove.Player = model.MyStatus
                   PositionPlayed = positionPlayed }
 
-            match GameRules.tryPlayPosition gm globalTileIndex with
+            match GameRules.tryPlayPosition gm positionPlayed with
             | None -> (model, Cmd.none, GameExternalMsg.NoOp)
             | Some subBoard ->
                 let newGm =

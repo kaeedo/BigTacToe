@@ -54,13 +54,10 @@ type GameModel =
     static member init participants =
         let initBoard =
             let subBoard i j =
-                let newI = i + (i * 2)
-                let newJ = j + (j * 2)
-
                 { SubBoard.Winner = None
                   Index = i, j
                   IsPlayable = true
-                  Tiles = Array2D.init 3 3 (fun i j -> (newI + i, newJ + j), None) }
+                  Tiles = Array2D.init 3 3 (fun i j -> (i, j), None) }
 
             let bigBoard =
                 { Board.Winner = None

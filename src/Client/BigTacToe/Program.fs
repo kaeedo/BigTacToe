@@ -101,7 +101,7 @@ module private App =
             let newGm, cmd = newGm, Cmd.none
 
             let m =
-                { Size = 100, 100
+                { Size = 100
                   GameModel = newGm
                   OpponentStatus = LocalAiGame
                   GameIdText = String.Empty
@@ -113,7 +113,6 @@ module private App =
 
             { model with GamePageModel = Some m }, (Cmd.map GamePageMsg cmd)
         | GoToHotSeatGame ->
-            // TODO: this
             let participant =
                 { Participant.PlayerId = Guid.NewGuid()
                   Meeple = Meeple.Ex }
@@ -128,7 +127,7 @@ module private App =
             let newGm, cmd = newGm, Cmd.none
 
             let m =
-                { Size = 100, 100
+                { Size = 100
                   GameModel = newGm
                   OpponentStatus = LocalGame
                   GameIdText = String.Empty
@@ -148,7 +147,7 @@ module private App =
             let newGm, cmd = newGm, Cmd.ofMsg ConnectToServer
 
             let m =
-                { Size = 100, 100
+                { Size = 100
                   GameModel = newGm
                   OpponentStatus = LookingForGame
                   GameIdText = String.Empty
@@ -170,7 +169,7 @@ module private App =
             let newGm, cmd = newGm, Cmd.ofMsg ConnectToServer
 
             let m =
-                { Size = 100, 100
+                { Size = 100
                   GameModel = newGm
                   OpponentStatus = WaitingForPrivate None
                   GameIdText = String.Empty

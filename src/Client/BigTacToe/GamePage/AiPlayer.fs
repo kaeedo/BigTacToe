@@ -28,11 +28,9 @@ module AiPlayer =
                     model.Board.SubBoards.[sbi, sbj].Tiles
                     |> Array2D.findIndex tile
 
-                let tileIndex = (ti + (sbi * 3)), (tj + (sbj * 3))
-
                 // TODO: Hopefully with more better AI this won't be needed
                 let (Some subBoards) =
-                    GameRules.tryPlayPosition model tileIndex
+                    GameRules.tryPlayPosition model ((sbi, sbj), (ti, tj))
 
                 let positionPlayed = (sbi, sbj), (ti, tj)
 
@@ -69,13 +67,10 @@ module AiPlayer =
                                 model.Board.SubBoards.[sbi, sbj].Tiles
                                 |> Array2D.findIndex tile
 
-                            let tileIndex = (ti + (sbi * 3)), (tj + (sbj * 3))
-
                             // TODO: Hopefully with more better AI this won't be needed
                             let (Some subBoards) =
-                                GameRules.tryPlayPosition model tileIndex
+                                GameRules.tryPlayPosition model ((sbi, sbj), (ti, tj))
 
-                            //let subBoards = GameRules.playPosition model ((sbi, sbj), (ti, tj))
                             let! bestPlay =
                                 seq {
                                     for _ in 0 .. 50 do
@@ -85,9 +80,8 @@ module AiPlayer =
                                             let gameMove =
                                                 { GameMove.Player = model.CurrentPlayer
                                                   PositionPlayed = positionPlayed }
-                                                
-                                            return
-                                                playOutGame (GameRules.updateModel model subBoards gameMove)
+
+                                            return playOutGame (GameRules.updateModel model subBoards gameMove)
                                         }
                                 }
                                 |> Async.Parallel
@@ -106,9 +100,9 @@ module AiPlayer =
                             return (pp, bestPlay)
                         })
                     |> Async.Parallel
-                    
+
                 let! fn1 = Async.StartChild possiblePlaysAsync
-                let! fn2 = Async.StartChild (Async.Sleep(1500))
+                let! fn2 = Async.StartChild(Async.Sleep(1500))
 
                 let! possiblePlays = fn1
                 do! fn2
@@ -147,4 +141,5 @@ module AiPlayer =
 
                 return OpponentPlayed((sbi, sbj), (ti, tj))
             }
+
         positionToPlay

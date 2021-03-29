@@ -20,5 +20,11 @@ module UtilitiesTests =
                 
                 raises<ArgumentException> <@ array |> Array2D.findIndex (0, 0) @>
             }
+            
+            Tests.test "Array2d find index by predicate" {
+                let array = Array2D.init 3 3 (fun i j -> i.ToString(), j.ToString())
+                
+                test <@ array |> Array2D.findIndexBy (fun ij -> ij.ToString() = "(1, 2)") = (1, 2)  @>
+            }
         ]
     ]

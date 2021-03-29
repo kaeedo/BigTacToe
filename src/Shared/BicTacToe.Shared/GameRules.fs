@@ -111,16 +111,13 @@ module GameRules =
         | Some winner -> Some winner
         | None -> if isDraw subBoard then Some Draw else None
 
-    let tryPlayPosition model (tileIndex: int * int) =
-        let (tileIndexI, tileIndexJ) = tileIndex
-
-        let subBoardIndexI = tileIndexI / 3
-        let subBoardIndexJ = tileIndexJ / 3
+    let tryPlayPosition model (positionPlayed: PositionPlayed) =
+        let (sbi, sbj), tileIndex = positionPlayed
 
         maybe {
             let! touchedSubBoard =
                 let sb =
-                    model.Board.SubBoards.[subBoardIndexI, subBoardIndexJ]
+                    model.Board.SubBoards.[sbi, sbj]
                     
                 match sb.IsPlayable && sb.Winner.IsNone with
                 | true -> Some sb

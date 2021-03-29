@@ -37,16 +37,16 @@ module internal Game =
                                        dispatch <| ResizeCanvas args.Info.Size
 
                                        args.Surface.Canvas.Clear()
-                                       
-                                       // Draw Grid
-                                       // Draw highlight
-                                       // Draw tiles
-                                       // Draw grey out
-                                       // draw sub board winners
+
 
                                        Render.drawBoard args model
+
                                        Render.drawMeeple args model
-                                       //Render.drawHighlights args model
+
+                                       if model.GameModel.Board.Winner.IsNone
+                                          && (model.GameModel.GameMoves |> List.isEmpty |> not) then
+                                           Render.drawHighlights args model
+
                                        Render.drawWinners args model
                                        Render.startAnimations args model),
                                touch =

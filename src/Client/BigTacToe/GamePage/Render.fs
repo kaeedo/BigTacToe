@@ -2,7 +2,6 @@
 
 open BigTacToe.Shared
 open SkiaSharp
-open SkiaSharp
 open SkiaSharp.Views.Forms
 
 [<RequireQualifiedAccess>]
@@ -84,7 +83,7 @@ module internal Render =
                StartY = top
                EndX = right - ((right - left) * line2Percent)
                EndY = top + ((bottom - top) * line2Percent) |}
-               
+
         use paint =
             new SKPaint(Color = color,
                         StrokeWidth = strokeWidth * multiplier,
@@ -99,7 +98,7 @@ module internal Render =
 
         if amount >= 0.5f
         then canvas.DrawLine(line2.StartX, line2.StartY, line2.EndX, line2.EndY, paint)
-        
+
 
     let private drawOh (color: SKColor)
                        (multiplier: float32)
@@ -156,26 +155,15 @@ module internal Render =
                 else drawOh Colors.meepleOh (multiplier) canvas rect amount shouldBlur
             | Draw -> drawGameDraw canvas rect)
 
-    let private calculateSubBoardRect i j (width, height) =
-        let (width, height) = width / 3, height / 3
-        let left = width * i
-        let top = height * j
-        let right = left + width
-        let bottom = top + height
+    let private calculateSubBoardRect offset i j size =
+        let subBoardSize = size / 3
 
-        (left, top, right, bottom)
-        
-    let private calculateZoomedSubBoardRect i j (width, height) =
-        let zoomLevel = 1.1f
-        
-        let (width, height) = float32 width*zoomLevel, float32 height*zoomLevel
-        let (width, height) = width / 3.0f, height / 3.0f
-        let left = width * float32 i
-        let top = height * float32 j
-        let right = left + width
-        let bottom = top + height
+        let left = subBoardSize * i
+        let top = subBoardSize * j
+        let right = left + subBoardSize
+        let bottom = top + subBoardSize
 
-        (int left, int top, int right, int bottom)
+        SKRect(float32 left + offset, float32 top + offset, float32 right + offset, float32 bottom + offset)
 
     let private calculateTileRect (tileI, tileJ) (subBoardRect: SKRect) =
         let iInSubBoard = tileI % 3
@@ -200,27 +188,53 @@ module internal Render =
 
         SKRect(left, top, right, bottom)
 
-    let private getTileRect positionPlayed size =
+    let private getTileRect positionPlayed size offset =
         let (sbi, sbj), (ti, tj) = positionPlayed
 
-        let (left, top, right, bottom) = calculateSubBoardRect sbi sbj size
-
         let subBoardRect =
-            SKRect(float32 left, float32 top, float32 right, float32 bottom)
+            calculateSubBoardRect offset sbi sbj size
 
         let globalIndex = (ti + (sbi * 3)), (tj + (sbj * 3))
 
         calculateTileRect globalIndex subBoardRect
 
-    let drawBoard (args: SKPaintSurfaceEventArgs) (clientGameModel: ClientGameModel) =
-        let board = clientGameModel.GameModel.Board
+    let private drawSubBoard (args: SKPaintSurfaceEventArgs) size sb =
         use canvas = args.Surface.Canvas
 
+        let offset =
+            let difference = args.Info.Size.Width - size
+            float32 difference / 2.0f
+
+        // TODO Move the paints?
         use oddGridPaint =
             new SKPaint(Color = Colors.oddGridBackground)
 
         use evenGridPaint =
             new SKPaint(Color = Colors.evenGridBackground)
+
+        let i, j = sb.Index
+
+        let subBoardRect = calculateSubBoardRect offset i j size
+
+        let isOddGrid = ((i + j) * (i + j)) % 2 = 0
+
+        canvas.DrawRect(subBoardRect, (if isOddGrid then oddGridPaint else evenGridPaint))
+
+        use smallPaint =
+            new SKPaint(Color = Colors.tileBorder, StrokeWidth = smallStroke, IsStroke = true)
+
+        if sb.Winner.IsSome
+        then smallPaint.MaskFilter <- SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 1f)
+
+        sb.Tiles
+        |> Array2D.iter (fun (globalIndex, _) ->
+            let tileRect =
+                calculateTileRect globalIndex subBoardRect
+
+            canvas.DrawRect(tileRect, smallPaint))
+
+    let drawBoard (args: SKPaintSurfaceEventArgs) (clientGameModel: ClientGameModel) =
+        let board = clientGameModel.GameModel.Board
 
         let blurred, normal =
             board.SubBoards
@@ -228,47 +242,21 @@ module internal Render =
             |> Seq.toList
             |> List.partition (fun sb -> board.Winner.IsSome || sb.Winner.IsSome)
 
-        let zoomLevel = 1.5f
-        
-        let drawSubBoard sb =
-            let i, j = sb.Index
-            
-            let subBoardRect =
-                if sb.IsPlayable
-                then
-                    let (left, top, right, bottom) =
-                        calculateSubBoardRect i j (clientGameModel.Size)
+        blurred
+        |> Seq.iter (drawSubBoard args (clientGameModel.Size))
 
-                    SKRect(float32 left, float32 top, float32 right, float32 bottom)
-                else
-                    let (left, top, right, bottom) =
-                        calculateSubBoardRect i j clientGameModel.Size
-                    SKRect(float32 left, float32 top, float32 right, float32 bottom)
-
-            let isOddGrid = ((i + j) * (i + j)) % 2 = 0
-
-            canvas.DrawRect(subBoardRect, (if isOddGrid then oddGridPaint else evenGridPaint))
-
-            use smallPaint =
-                new SKPaint(Color = Colors.tileBorder, StrokeWidth = smallStroke, IsStroke = true)
-
-            if sb.Winner.IsSome
-            then smallPaint.MaskFilter <- SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 1f)
-
-            sb.Tiles
-            |> Array2D.iter (fun (globalIndex, _) ->
-                let tileRect =
-                    calculateTileRect globalIndex subBoardRect
-
-                canvas.DrawRect(tileRect, smallPaint))
-
-        blurred |> Seq.iter (drawSubBoard)
-
-        normal |> Seq.iter (drawSubBoard)
+        normal
+        |> Seq.iter (drawSubBoard args (clientGameModel.Size))
 
     let drawWinners (args: SKPaintSurfaceEventArgs) (clientGameModel: ClientGameModel) =
         let board = clientGameModel.GameModel.Board
         use canvas = args.Surface.Canvas
+
+        let offset =
+            let difference =
+                args.Info.Size.Width - clientGameModel.Size
+
+            float32 difference / 2.0f
 
         let animatingSubBoards =
             clientGameModel.Animations
@@ -285,12 +273,9 @@ module internal Render =
         |> Seq.except animatingSubBoards
         |> Seq.iter (fun sb ->
             let (i, j) = sb.Index
-            // Extract this everywhere
-            let (left, top, right, bottom) =
-                calculateSubBoardRect i j clientGameModel.Size
 
             let subBoardRect =
-                SKRect(float32 left, float32 top, float32 right, float32 bottom)
+                calculateSubBoardRect offset i j (clientGameModel.Size)
 
             let shouldBlur = board.Winner.IsSome
 
@@ -304,19 +289,22 @@ module internal Render =
                 | _ -> false)
 
         if not isAnimatingGameWinner then
-            let (width, height) = clientGameModel.Size
-            let constrainedSize = if width > height then height else width
-
             drawWinner
                 board.Winner
                 canvas
-                (SKRect(0.0f, 0.0f, float32 constrainedSize, float32 constrainedSize))
+                (SKRect(0.0f, 0.0f, float32 clientGameModel.Size, float32 clientGameModel.Size))
                 1.0f
                 5.0f
                 false
 
     let drawMeeple (args: SKPaintSurfaceEventArgs) (clientGameModel: ClientGameModel) =
         use canvas = args.Surface.Canvas
+
+        let offset =
+            let difference =
+                args.Info.Size.Width - clientGameModel.Size
+
+            float32 difference / 2.0f
 
         clientGameModel.GameModel.GameMoves
         |> Seq.except
@@ -330,7 +318,7 @@ module internal Render =
                  gm))
         |> Seq.iter (fun gameMove ->
             let tileRect =
-                getTileRect gameMove.PositionPlayed clientGameModel.Size
+                getTileRect gameMove.PositionPlayed (clientGameModel.Size) offset
 
             let shouldBlur =
                 let (sbi, sbj), _ = gameMove.PositionPlayed
@@ -358,38 +346,53 @@ module internal Render =
 
     let drawHighlights (args: SKPaintSurfaceEventArgs) (clientGameModel: ClientGameModel) =
         use canvas = args.Surface.Canvas
-        canvas.Scale(3.0f,3.0f, 50.0f, 50.0f)
-        ()
-//        use canvas = args.Surface.Canvas
-//        let board = clientGameModel.GameModel.Board
-//
-//        use highlightPaint =
-//            new SKPaint(Color = Colors.highlightLight.WithAlpha(80uy))
-//
-//        board.SubBoards
-//        |> Array2D.iteri (fun i j sb ->
-//            // Extract this everywhere
-//            let (left, top, right, bottom) =
-//                calculateSubBoardRect i j clientGameModel.Size
-//
-//            let subBoardRect =
-//                SKRect(float32 left, float32 top, float32 right, float32 bottom)
-//
-//            if sb.IsPlayable
-//            then canvas.DrawRect(subBoardRect, highlightPaint)
-//
-//            canvas.DrawRect
-//                (subBoardRect, new SKPaint(Color = Colors.tileBorder, StrokeWidth = largeStroke, IsStroke = true)))
+        
+        let color =
+            (match clientGameModel.GameModel.CurrentPlayer.Meeple with
+            | Meeple.Ex -> Colors.meepleEx
+            | Meeple.Oh -> Colors.meepleOh).WithAlpha(255uy)
+
+        let fillShadow =
+            SKImageFilter.CreateDropShadowOnly(0.0f, 0.0f, 4.0f, 4.0f, color)
+
+        use paint =
+            new SKPaint(IsStroke = true, StrokeWidth = largeStroke, ImageFilter = fillShadow)
+
+        let size = clientGameModel.Size
+
+        let offset =
+            let difference = args.Info.Size.Width - size
+            float32 difference / 2.0f
+
+        let highlightedSubBoards =
+            clientGameModel.GameModel.Board.SubBoards
+            |> Seq.cast<SubBoard>
+            |> Seq.filter (fun sb -> sb.IsPlayable)
+
+        highlightedSubBoards
+        |> Seq.iter (fun hsb ->
+            let i, j = hsb.Index
+
+            let subBoardRect = calculateSubBoardRect offset i j size
+
+            canvas.DrawRect(subBoardRect, paint))
+
 
     let startAnimations (args: SKPaintSurfaceEventArgs) (clientGameModel: ClientGameModel) =
         use canvas = args.Surface.Canvas
+
+        let offset =
+            let difference =
+                args.Info.Size.Width - clientGameModel.Size
+
+            float32 difference / 2.0f
 
         clientGameModel.Animations
         |> List.iter (fun drawingAnimation ->
             match drawingAnimation.Drawing with
             | GameMove gm ->
                 let tileRect =
-                    getTileRect gm.PositionPlayed clientGameModel.Size
+                    getTileRect gm.PositionPlayed (clientGameModel.Size) offset
 
                 let multiplier = 1.0f
 
@@ -402,12 +405,9 @@ module internal Render =
                 | Some (Draw) -> ()
                 | Some (Participant p) ->
                     let (i, j) = sb.Index
-                    // Extract this everywhere
-                    let (left, top, right, bottom) =
-                        calculateSubBoardRect i j clientGameModel.Size
 
                     let subBoardRect =
-                        SKRect(float32 left, float32 top, float32 right, float32 bottom)
+                        calculateSubBoardRect offset i j (clientGameModel.Size)
 
                     let multiplier = 3.0f
 
@@ -417,13 +417,10 @@ module internal Render =
                     | Meeple.Ex ->
                         drawEx Colors.meepleEx multiplier canvas subBoardRect drawingAnimation.AnimationPercent false
             | Winner boardWinner ->
-                let (width, height) = clientGameModel.Size
-                let constrainedSize = if width > height then height else width
-
                 drawWinner
                     (Some boardWinner)
                     canvas
-                    (SKRect(0.0f, 0.0f, float32 constrainedSize, float32 constrainedSize))
+                    (SKRect(0.0f, 0.0f, float32 clientGameModel.Size, float32 clientGameModel.Size))
                     drawingAnimation.AnimationPercent
                     5.0f
                     false)

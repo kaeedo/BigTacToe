@@ -39,12 +39,25 @@ module Array2D =
     let inline findIndex<'a when 'a: equality> (item: 'a) (array: 'a [,]) =
         let length = array |> Array2D.length1
 
-        if (length) = (array |> Array2D.length2) then
+        if length = (array |> Array2D.length2) then
             let index =
                 array
                 |> Seq.cast<'a>
                 |> Seq.findIndex (fun a -> a = item)
 
             index / length, index % length
+        else
+            raise <| ArgumentException("Array must be square")
+            
+    let inline findIndexBy<'a when 'a: equality> (predicate: 'a -> bool) (array: 'a [,]) =
+        let length = array |> Array2D.length1
+
+        if length = (array |> Array2D.length2) then
+            let item =
+                array
+                |> Seq.cast<'a>
+                |> Seq.find predicate
+                
+            array |> findIndex item
         else
             raise <| ArgumentException("Array must be square")

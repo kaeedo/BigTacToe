@@ -28,7 +28,7 @@ type DrawingAnimation =
       AnimationPercent: float32 }
 
 type ClientGameModel =
-    { Size: int * int
+    { Size: int
       OpponentStatus: OpponentStatus
       Canvas: ViewRef<Views.Forms.SKCanvasView>
       GameId: int

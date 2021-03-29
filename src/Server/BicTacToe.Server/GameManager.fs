@@ -171,14 +171,9 @@ module GameManager =
                                 rc.Reply(Result.Error InvalidGameId)
                                 return! loop state
                             | Some g ->
-                                let tileIndex =
-                                    let (sbi, sbj) = fst gameMove.PositionPlayed
-                                    let (ti, tj) = snd gameMove.PositionPlayed
-                                    (ti + (sbi * 3)), (tj + (sbj * 3))
-
                                 let played =
                                     maybe {
-                                        let! subBoards = GameRules.tryPlayPosition g tileIndex
+                                        let! subBoards = GameRules.tryPlayPosition g gameMove.PositionPlayed
 
                                         let! _ =
                                             if g.CurrentPlayer <> gameMove.Player then None else Some g.CurrentPlayer
