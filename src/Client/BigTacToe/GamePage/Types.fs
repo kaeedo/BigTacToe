@@ -5,6 +5,7 @@ open SkiaSharp
 open BigTacToe.Shared
 open BigTacToe.Shared.SignalRHub
 open Fable.SignalR.Elmish
+open Xamarin.Forms
 
 type OpponentStatus =
     | LocalGame
@@ -18,14 +19,16 @@ type Drawing =
     | GameMove of GameMove
     | SubBoardWinner of SubBoard
     | Winner of BoardWinner
-    
-type AnimationMessage =
-    | RemoveAnimation
-    | AnimatePercent of Drawing * float32
 
 type DrawingAnimation =
     { Drawing: Drawing
-      AnimationPercent: float32 }
+      AnimationPercent: float32
+      Animation: Animation }
+    
+type AnimationMessage =
+    | AddAnimation of DrawingAnimation
+    | FinishAnimation of Drawing
+    | AnimatePercent of Drawing * float32
 
 type ClientGameModel =
     { Size: int
@@ -34,7 +37,7 @@ type ClientGameModel =
       GameId: int
       GameIdText: string
       MyStatus: Participant
-      Animations: DrawingAnimation list
+      RunningAnimation: DrawingAnimation option
       Hub: Elmish.Hub<Action, Response> option
       GameModel: GameModel }
 

@@ -10,7 +10,17 @@ open Xamarin.Forms
 
 module internal Messages =
     let private zoomLevel = 0.97f
-    let private calculatePositionPlayed (size: int) (point: SKPoint) (offset: float32) =
+
+    let private calculatePositionPlayed (model: ClientGameModel) (point: SKPoint) =
+        let size = model.Size
+
+        let offset =
+            let difference =
+                (float32 model.Size / zoomLevel)
+                - float32 model.Size
+
+            difference / 2.0f
+
         let subBoardSize = size / 3
 
         let rects =
@@ -45,6 +55,37 @@ module internal Messages =
             |> Array2D.findIndexBy (fun (r: SKRect) -> r.Contains(point))
 
         (sbi, sbj), (ti, tj)
+
+    let private tryPlayPosition model gm positionPlayed =
+        match GameRules.tryPlayPosition gm positionPlayed with
+        | None -> (model, Cmd.none, GameExternalMsg.NoOp)
+        | Some subBoard ->
+            let gameMove =
+                { GameMove.Player = model.GameModel.CurrentPlayer
+                  PositionPlayed = positionPlayed }
+
+            let newGm =
+                GameRules.updateModel gm subBoard gameMove
+
+            let isGameOver = newGm.Board.Winner.IsSome
+            
+            let createAnimationCommand =
+                Cmd.ofSub (fun dispatch -> Animations.create (GameMove gameMove) (AnimationMessage >> dispatch))
+
+            let command =
+                match model.OpponentStatus with
+                | Joined _ -> Cmd.SignalR.send model.Hub (Action.MakeMove(model.GameId, gameMove))
+                | LocalGame -> Cmd.none
+                | LocalAiGame ->
+                    if isGameOver
+                    then Cmd.none
+                    else Cmd.ofAsyncMsg <| AiPlayer.playPosition newGm
+                | _ -> Cmd.none
+
+            let command =
+                Cmd.batch ([ command; createAnimationCommand ])
+
+            ({ model with GameModel = newGm }, command, GameExternalMsg.NoOp)
 
     let update msg (model: ClientGameModel) =
         let gm = model.GameModel
@@ -83,11 +124,6 @@ module internal Messages =
             Cmd.none,
             GameExternalMsg.NoOp
         | OpponentPlayed positionPlayed ->
-            let tileIndex =
-                let (sbi, sbj) = fst positionPlayed
-                let (ti, tj) = snd positionPlayed
-                (ti + (sbi * 3)), (tj + (sbj * 3))
-
             let subBoards =
                 GameRules.tryPlayPosition gm positionPlayed
 
@@ -99,15 +135,12 @@ module internal Messages =
 
                 let newGm = GameRules.updateModel gm sb gameMove
 
-                let animations, commands =
-                    Animations.getAnimations model newGm gameMove
+                let createAnimationCommand =
+                    Cmd.ofSub (fun dispatch -> Animations.create (GameMove gameMove) (AnimationMessage >> dispatch))
 
-                let model =
-                    { model with
-                          GameModel = newGm
-                          Animations = animations }
+                let model = { model with GameModel = newGm }
 
-                model, Cmd.batch commands, GameExternalMsg.NoOp
+                model, createAnimationCommand, GameExternalMsg.NoOp
             | None -> model, Cmd.none, GameExternalMsg.NoOp // TODO: FIX THIS
 
         | StartPrivateGame ->
@@ -135,77 +168,19 @@ module internal Messages =
                 model, Cmd.none, GameExternalMsg.NoOp
 
         | SKSurfaceTouched point when (model.OpponentStatus = LocalGame)
+                                      && model.RunningAnimation.IsNone
                                       && gm.Board.Winner.IsNone ->
-            let offset =
-                let difference =
-                    (float32 model.Size / zoomLevel) - float32 model.Size
+            let positionPlayed = calculatePositionPlayed model point
 
-                difference / 2.0f
-
-            let positionPlayed =
-                calculatePositionPlayed model.Size point offset
-
-            let gameMove =
-                { GameMove.Player = model.GameModel.CurrentPlayer
-                  PositionPlayed = positionPlayed }
-
-            match GameRules.tryPlayPosition gm positionPlayed with
-            | None -> (model, Cmd.none, GameExternalMsg.NoOp)
-            | Some subBoard ->
-                let newGm =
-                    GameRules.updateModel gm subBoard gameMove
-
-                let animations, commands =
-                    Animations.getAnimations model newGm gameMove
-
-                ({ model with
-                       GameModel = newGm
-                       Animations = animations },
-                 Cmd.batch commands,
-                 GameExternalMsg.NoOp)
+            tryPlayPosition model gm positionPlayed
         | SKSurfaceTouched point when (model.OpponentStatus <> LocalGame)
+                                      && model.RunningAnimation.IsNone
                                       && (gm.CurrentPlayer.PlayerId = model.MyStatus.PlayerId)
                                       && gm.Board.Winner.IsNone ->
-            let offset =
-                let difference =
-                    (float32 model.Size / zoomLevel) - float32 model.Size
+            let positionPlayed = calculatePositionPlayed model point
 
-                difference / 2.0f
+            tryPlayPosition model gm positionPlayed
 
-            let positionPlayed =
-                calculatePositionPlayed model.Size point offset
-
-            let gameMove =
-                { GameMove.Player = model.MyStatus
-                  PositionPlayed = positionPlayed }
-
-            match GameRules.tryPlayPosition gm positionPlayed with
-            | None -> (model, Cmd.none, GameExternalMsg.NoOp)
-            | Some subBoard ->
-                let newGm =
-                    GameRules.updateModel gm subBoard gameMove
-
-                let isGameOver = newGm.Board.Winner.IsSome
-
-                let animations, commands =
-                    Animations.getAnimations model newGm gameMove
-
-                let command =
-                    match model.OpponentStatus with
-                    | Joined _ -> Cmd.SignalR.send model.Hub (Action.MakeMove(model.GameId, gameMove))
-                    | LocalAiGame ->
-                        if isGameOver
-                        then Cmd.none
-                        else Cmd.ofAsyncMsg <| AiPlayer.playPosition newGm
-                    | _ -> Cmd.none
-
-                let command = Cmd.batch (command :: commands)
-
-                ({ model with
-                       GameModel = newGm
-                       Animations = animations },
-                 command,
-                 GameExternalMsg.NoOp)
         | GoToMainMenu ->
             if model.GameModel.Board.Winner.IsSome
             then model, Cmd.none, GameExternalMsg.NavigateToMainMenu

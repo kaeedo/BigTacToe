@@ -223,6 +223,16 @@ module internal Render =
         use smallPaint =
             new SKPaint(Color = Colors.tileBorder, StrokeWidth = smallStroke, IsStroke = true)
 
+        //        if sb.Winner.IsNone then
+//            sb.Tiles
+//            |> Array2D.iter (fun (globalIndex, _) ->
+//                let tileRect =
+//                    calculateTileRect globalIndex subBoardRect
+//
+//                canvas.DrawRect(tileRect, smallPaint))
+//        else
+//            canvas.DrawRect(subBoardRect, smallPaint)
+
         if sb.Winner.IsSome
         then smallPaint.MaskFilter <- SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 1f)
 
@@ -258,19 +268,18 @@ module internal Render =
 
             float32 difference / 2.0f
 
-        let animatingSubBoards =
-            clientGameModel.Animations
-            |> Seq.filter (fun a ->
-                match a.Drawing with
-                | SubBoardWinner _ -> true
-                | _ -> false)
-            |> Seq.map (fun a ->
-                let (SubBoardWinner sb) = a.Drawing
-                sb)
-
         board.SubBoards
         |> Seq.cast<SubBoard>
-        |> Seq.except animatingSubBoards
+        |> Seq.filter (fun sb ->
+            match clientGameModel.RunningAnimation with
+            | None -> true
+            | Some ra ->
+                match ra.Drawing with
+                | SubBoardWinner sbw -> sb <> sbw
+                | GameMove gm ->
+                    let (sbIndex, _) = gm.PositionPlayed
+                    sb.Index <> sbIndex
+                | _ -> true)
         |> Seq.iter (fun sb ->
             let (i, j) = sb.Index
 
@@ -281,12 +290,7 @@ module internal Render =
 
             drawWinner sb.Winner canvas subBoardRect 1.0f 3.0f shouldBlur)
 
-        let isAnimatingGameWinner =
-            clientGameModel.Animations
-            |> List.exists (fun a ->
-                match a.Drawing with
-                | Winner _ -> true
-                | _ -> false)
+        let isAnimatingGameWinner = clientGameModel.RunningAnimation.IsSome
 
         if not isAnimatingGameWinner then
             drawWinner
@@ -307,15 +311,13 @@ module internal Render =
             float32 difference / 2.0f
 
         clientGameModel.GameModel.GameMoves
-        |> Seq.except
-            (clientGameModel.Animations
-             |> Seq.filter (fun a ->
-                 match a.Drawing with
-                 | GameMove _ -> true
-                 | _ -> false)
-             |> Seq.map (fun am ->
-                 let (GameMove gm) = am.Drawing
-                 gm))
+        |> Seq.filter (fun gm ->
+            match clientGameModel.RunningAnimation with
+            | None -> true
+            | Some ra ->
+                match ra.Drawing with
+                | GameMove animatingGameMove -> gm <> animatingGameMove
+                | _ -> true)
         |> Seq.iter (fun gameMove ->
             let tileRect =
                 getTileRect gameMove.PositionPlayed (clientGameModel.Size) offset
@@ -327,6 +329,7 @@ module internal Render =
                 || clientGameModel.GameModel.Board.SubBoards.[sbi, sbj]
                     .Winner.IsSome
 
+            //if not shouldBlur then
             if gameMove.Player.Meeple = Meeple.Ex then
                 drawEx
                     (if shouldBlur then Colors.meepleExMuted else Colors.meepleEx)
@@ -346,11 +349,12 @@ module internal Render =
 
     let drawHighlights (args: SKPaintSurfaceEventArgs) (clientGameModel: ClientGameModel) =
         use canvas = args.Surface.Canvas
-        
+
         let color =
             (match clientGameModel.GameModel.CurrentPlayer.Meeple with
-            | Meeple.Ex -> Colors.meepleEx
-            | Meeple.Oh -> Colors.meepleOh).WithAlpha(255uy)
+             | Meeple.Ex -> Colors.meepleEx
+             | Meeple.Oh -> Colors.meepleOh)
+                .WithAlpha(255uy)
 
         let fillShadow =
             SKImageFilter.CreateDropShadowOnly(0.0f, 0.0f, 4.0f, 4.0f, color)
@@ -387,8 +391,9 @@ module internal Render =
 
             float32 difference / 2.0f
 
-        clientGameModel.Animations
-        |> List.iter (fun drawingAnimation ->
+
+        clientGameModel.RunningAnimation
+        |> Option.iter (fun drawingAnimation ->
             match drawingAnimation.Drawing with
             | GameMove gm ->
                 let tileRect =
