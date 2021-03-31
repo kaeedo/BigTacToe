@@ -24,6 +24,10 @@ type DrawingAnimation =
     { Drawing: Drawing
       AnimationPercent: float32
       Animation: Animation }
+    static member init drawing =
+        { DrawingAnimation.Drawing = drawing
+          AnimationPercent = 0.0f
+          Animation = Animation() }
     
 type AnimationMessage =
     | AddAnimation of DrawingAnimation

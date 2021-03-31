@@ -67,25 +67,29 @@ module internal Messages =
             let newGm =
                 GameRules.updateModel gm subBoard gameMove
 
-            let isGameOver = newGm.Board.Winner.IsSome
-            
+            let animation = DrawingAnimation.init (GameMove gameMove)
+
             let createAnimationCommand =
-                Cmd.ofSub (fun dispatch -> Animations.create (GameMove gameMove) (AnimationMessage >> dispatch))
+                Cmd.ofSub (fun dispatch -> Animations.create animation (AnimationMessage >> dispatch))
 
             let command =
                 match model.OpponentStatus with
                 | Joined _ -> Cmd.SignalR.send model.Hub (Action.MakeMove(model.GameId, gameMove))
                 | LocalGame -> Cmd.none
                 | LocalAiGame ->
-                    if isGameOver
+                    if newGm.Board.Winner.IsSome
                     then Cmd.none
                     else Cmd.ofAsyncMsg <| AiPlayer.playPosition newGm
                 | _ -> Cmd.none
 
             let command =
-                Cmd.batch ([ command; createAnimationCommand ])
+                Cmd.batch ([ createAnimationCommand; command ])
 
-            ({ model with GameModel = newGm }, command, GameExternalMsg.NoOp)
+            ({ model with
+                   GameModel = newGm
+                   RunningAnimation = Some animation },
+             command,
+             GameExternalMsg.NoOp)
 
     let update msg (model: ClientGameModel) =
         let gm = model.GameModel
@@ -134,9 +138,12 @@ module internal Messages =
                       PositionPlayed = positionPlayed }
 
                 let newGm = GameRules.updateModel gm sb gameMove
+                
+                let animation =
+                    DrawingAnimation.init (GameMove gameMove)
 
                 let createAnimationCommand =
-                    Cmd.ofSub (fun dispatch -> Animations.create (GameMove gameMove) (AnimationMessage >> dispatch))
+                    Cmd.ofSub (fun dispatch -> Animations.create animation (AnimationMessage >> dispatch))
 
                 let model = { model with GameModel = newGm }
 

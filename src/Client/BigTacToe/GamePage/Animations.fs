@@ -12,6 +12,7 @@ module internal Animations =
 
     let private animateOh (drawing: Drawing) dispatch =
         let parentAnimation = Animation()
+
         let animation =
             Animation
                 ((fun f -> dispatch (AnimatePercent(drawing, float32 f))),
@@ -42,8 +43,8 @@ module internal Animations =
 
         parentAnimation
 
-    let create drawing dispatch =
-        let animationFn =
+    let create animation dispatch =
+        let animationFn drawing =
             let meeple =
                 match drawing with
                 | GameMove gm -> Some gm.Player.Meeple
@@ -57,13 +58,12 @@ module internal Animations =
                 | _ -> None
 
             match meeple.Value with
-            | Meeple.Ex -> animateEx
-            | Meeple.Oh -> animateOh
+            | Meeple.Ex -> animateEx drawing
+            | Meeple.Oh -> animateOh drawing
 
         let animation =
-            { DrawingAnimation.Drawing = drawing
-              AnimationPercent = 0.0f
-              Animation = animationFn drawing dispatch }
+            { animation with
+                  Animation = animationFn animation.Drawing dispatch }
 
         dispatch <| AddAnimation animation
 
@@ -81,7 +81,7 @@ module internal AnimationMessages =
             Cmd.none,
             GameExternalMsg.NoOp
         | FinishAnimation drawing ->
-            let cmd =
+            let animation, cmd =
                 match drawing with
                 | GameMove gm ->
                     model.GameModel.Board.SubBoards
@@ -91,19 +91,22 @@ module internal AnimationMessages =
                         let (sb, _) = gm.PositionPlayed
                         subBoard.Index = sb)
                     |> function
-                        | None -> Cmd.none
-                        | Some sb ->
-                            Cmd.ofSub (fun dispatch ->
-                                Animations.create (SubBoardWinner sb) (AnimationMessage >> dispatch))
-                | SubBoardWinner sbw ->
+                    | None -> None, Cmd.none
+                    | Some sb ->
+                        let animation =
+                            DrawingAnimation.init (SubBoardWinner sb)
+
+                        Some animation, Cmd.ofSub (fun dispatch -> Animations.create animation (AnimationMessage >> dispatch))
+                | SubBoardWinner _ ->
                     match model.GameModel.Board.Winner with
-                    | None -> Cmd.none
+                    | None -> None, Cmd.none
                     | Some bw ->
-                        Cmd.ofSub (fun dispatch ->
-                                Animations.create (Winner bw) (AnimationMessage >> dispatch))
-                | _ -> Cmd.none
-            { model with RunningAnimation = None }, cmd, GameExternalMsg.NoOp
-        | AnimatePercent (drawing, percent) ->
+                        let animation = DrawingAnimation.init (Winner bw)
+                        Some animation, Cmd.ofSub (fun dispatch -> Animations.create animation (AnimationMessage >> dispatch))
+                | _ -> None, Cmd.none
+
+            { model with RunningAnimation = animation }, cmd, GameExternalMsg.NoOp
+        | AnimatePercent (_, percent) ->
             let animation =
                 model.RunningAnimation
                 |> Option.map (fun ra -> { ra with AnimationPercent = percent })

@@ -219,13 +219,6 @@ type App() as app =
 #endif
         |> XamarinFormsProgram.run app
 
-#if DEBUG
-    // Uncomment this line to enable live update in debug mode.
-    // See https://fsprojects.github.io/Fabulous/Fabulous.XamarinForms/tools.html#live-update for further  instructions.
-    //
-    //do runner.EnableLiveUpdate()
-#endif
-
 //Cmd.SignalR.send model.Hub (Action.QuitGame (model.GameId, model.MyStatus.PlayerId)), GameExternalMsg.NavigateToMainMenu
 
 // Uncomment this code to save the application state to app.Properties using Newtonsoft.Json

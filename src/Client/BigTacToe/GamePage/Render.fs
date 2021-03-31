@@ -53,6 +53,7 @@ module internal Render =
                        (rect: SKRect)
                        (amount: float32)
                        (shouldBlur: bool)
+                       (shouldStroke: bool)
                        =
         let strokeWidth = 7.0f
 
@@ -84,20 +85,42 @@ module internal Render =
                EndX = right - ((right - left) * line2Percent)
                EndY = top + ((bottom - top) * line2Percent) |}
 
-        use paint =
-            new SKPaint(Color = color,
+        use lineThicknessStrokePaint =
+            new SKPaint(Style = SKPaintStyle.Stroke,
+                        Color = SKColors.Black,
                         StrokeWidth = strokeWidth * multiplier,
-                        IsStroke = true,
-                        IsAntialias = true,
                         StrokeCap = SKStrokeCap.Round)
 
+        use strokePaint =
+            new SKPaint(Style = SKPaintStyle.Stroke,
+                        Color = SKColors.Black,
+                        StrokeWidth = 5.0f,
+                        StrokeCap = SKStrokeCap.Round,
+                        IsAntialias = true)
+
+        use fillPaint =
+            new SKPaint(Color = color, Style = SKPaintStyle.Fill, IsAntialias = true, StrokeCap = SKStrokeCap.Round)
+
         if shouldBlur
-        then paint.MaskFilter <- SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 5.0f)
+        then fillPaint.MaskFilter <- SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 5.0f)
 
-        canvas.DrawLine(line1.StartX, line1.StartY, line1.EndX, line1.EndY, paint)
+        use path = new SKPath()
+        path.MoveTo(line1.StartX, line1.StartY)
+        path.LineTo(line1.EndX, line1.EndY)
 
-        if amount >= 0.5f
-        then canvas.DrawLine(line2.StartX, line2.StartY, line2.EndX, line2.EndY, paint)
+        if amount >= 0.5f then
+            path.MoveTo(line2.StartX, line2.StartY)
+            path.LineTo(line2.EndX, line2.EndY)
+
+        use outlinePath = new SKPath()
+
+        lineThicknessStrokePaint.GetFillPath(path, outlinePath)
+        |> ignore
+
+        if shouldStroke && not shouldBlur
+        then canvas.DrawPath(outlinePath, strokePaint)
+
+        canvas.DrawPath(outlinePath, fillPaint)
 
 
     let private drawOh (color: SKColor)
@@ -106,14 +129,9 @@ module internal Render =
                        (rect: SKRect)
                        (amount: float32)
                        (shouldBlur: bool)
+                       (shouldStroke: bool)
                        =
         let strokeWidth = 5.0f
-
-        use paint =
-            new SKPaint(Color = color, StrokeWidth = strokeWidth * multiplier, IsStroke = true, IsAntialias = true)
-
-        if shouldBlur
-        then paint.MaskFilter <- SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 5.0f)
 
         let paddingHorizontal =
             rect.Width * (0.1f - (0.01f * multiplier))
@@ -128,8 +146,40 @@ module internal Render =
                  rect.Right - paddingHorizontal,
                  rect.Bottom - paddingVertical)
 
-        let amount = 360.0f * amount
-        canvas.DrawArc(rect, -90.0f, -amount, false, paint)
+        use lineThicknessStrokePaint =
+            new SKPaint(Style = SKPaintStyle.Stroke,
+                        Color = SKColors.Black,
+                        StrokeWidth = strokeWidth * multiplier,
+                        StrokeCap = SKStrokeCap.Round)
+
+        use strokePaint =
+            new SKPaint(Style = SKPaintStyle.Stroke,
+                        Color = SKColors.Black,
+                        StrokeWidth = 5.0f,
+                        StrokeCap = SKStrokeCap.Round,
+                        IsAntialias = true)
+
+        use fillPaint =
+            new SKPaint(Color = color, Style = SKPaintStyle.Fill, IsAntialias = true)
+
+        if shouldBlur
+        then fillPaint.MaskFilter <- SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 5.0f)
+
+        let amount = 359.9f * amount
+
+        use path = new SKPath()
+        path.MoveTo(rect.Left + (rect.Width / 2.0f), rect.Top)
+        path.ArcTo(rect, -90.0f, -amount, false)
+
+        use outlinePath = new SKPath()
+
+        lineThicknessStrokePaint.GetFillPath(path, outlinePath)
+        |> ignore
+
+        if shouldStroke && not shouldBlur
+        then canvas.DrawPath(outlinePath, strokePaint)
+
+        canvas.DrawPath(outlinePath, fillPaint)
 
     let private drawGameDraw (canvas: SKCanvas) (rect: SKRect) =
         use paint =
@@ -151,8 +201,8 @@ module internal Render =
             match w with
             | Participant p ->
                 if p.Meeple = Meeple.Ex
-                then drawEx Colors.meepleEx (multiplier) canvas rect amount shouldBlur
-                else drawOh Colors.meepleOh (multiplier) canvas rect amount shouldBlur
+                then drawEx Colors.meepleEx (multiplier) canvas rect amount shouldBlur true
+                else drawOh Colors.meepleOh (multiplier) canvas rect amount shouldBlur true
             | Draw -> drawGameDraw canvas rect)
 
     let private calculateSubBoardRect offset i j size =
@@ -223,18 +273,9 @@ module internal Render =
         use smallPaint =
             new SKPaint(Color = Colors.tileBorder, StrokeWidth = smallStroke, IsStroke = true)
 
-        //        if sb.Winner.IsNone then
-//            sb.Tiles
-//            |> Array2D.iter (fun (globalIndex, _) ->
-//                let tileRect =
-//                    calculateTileRect globalIndex subBoardRect
-//
-//                canvas.DrawRect(tileRect, smallPaint))
-//        else
-//            canvas.DrawRect(subBoardRect, smallPaint)
-
-        if sb.Winner.IsSome
-        then smallPaint.MaskFilter <- SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 1f)
+        if sb.Winner.IsSome then
+            smallPaint.MaskFilter <- SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 1.0f)
+            smallPaint.StrokeWidth <- 0.5f
 
         sb.Tiles
         |> Array2D.iter (fun (globalIndex, _) ->
@@ -296,7 +337,7 @@ module internal Render =
             drawWinner
                 board.Winner
                 canvas
-                (SKRect(0.0f, 0.0f, float32 clientGameModel.Size, float32 clientGameModel.Size))
+                (SKRect(offset, offset, float32 clientGameModel.Size + offset, float32 clientGameModel.Size + offset))
                 1.0f
                 5.0f
                 false
@@ -322,30 +363,35 @@ module internal Render =
             let tileRect =
                 getTileRect gameMove.PositionPlayed (clientGameModel.Size) offset
 
+            let (sbi, sbj), _ = gameMove.PositionPlayed
+
+            let shouldDraw =
+                let isLatestPlayInSubBoard =
+                    ((clientGameModel.GameModel.GameMoves |> List.head)
+                        .PositionPlayed
+                     |> fst) = (sbi, sbj)
+
+                clientGameModel.GameModel.Board.SubBoards.[sbi, sbj]
+                    .Winner.IsNone
+                || (clientGameModel.RunningAnimation.IsSome
+                    && isLatestPlayInSubBoard)
+
             let shouldBlur =
-                let (sbi, sbj), _ = gameMove.PositionPlayed
-
                 clientGameModel.GameModel.Board.Winner.IsSome
-                || clientGameModel.GameModel.Board.SubBoards.[sbi, sbj]
-                    .Winner.IsSome
+                || (clientGameModel.GameModel.Board.SubBoards.[sbi, sbj]
+                        .Winner.IsSome
+                    && clientGameModel.RunningAnimation.IsNone)
 
-            //if not shouldBlur then
-            if gameMove.Player.Meeple = Meeple.Ex then
-                drawEx
-                    (if shouldBlur then Colors.meepleExMuted else Colors.meepleEx)
-                    1.0f
-                    canvas
-                    tileRect
-                    1.0f
-                    shouldBlur
-            else
-                drawOh
-                    (if shouldBlur then Colors.meepleOhMuted else Colors.meepleOh)
-                    1.0f
-                    canvas
-                    tileRect
-                    1.0f
-                    shouldBlur)
+            match shouldDraw, shouldBlur with
+            | false, _ -> ()
+            | true, false ->
+                if gameMove.Player.Meeple = Meeple.Ex
+                then drawEx Colors.meepleEx 1.0f canvas tileRect 1.0f false false
+                else drawOh Colors.meepleOh 1.0f canvas tileRect 1.0f false false
+            | true, true ->
+                if gameMove.Player.Meeple = Meeple.Ex
+                then drawEx Colors.meepleExMuted 1.0f canvas tileRect 1.0f true false
+                else drawOh Colors.meepleOhMuted 1.0f canvas tileRect 1.0f true false)
 
     let drawHighlights (args: SKPaintSurfaceEventArgs) (clientGameModel: ClientGameModel) =
         use canvas = args.Surface.Canvas
@@ -402,8 +448,10 @@ module internal Render =
                 let multiplier = 1.0f
 
                 match gm.Player.Meeple with
-                | Meeple.Oh -> drawOh Colors.meepleOh multiplier canvas tileRect drawingAnimation.AnimationPercent false
-                | Meeple.Ex -> drawEx Colors.meepleEx multiplier canvas tileRect drawingAnimation.AnimationPercent false
+                | Meeple.Oh ->
+                    drawOh Colors.meepleOh multiplier canvas tileRect drawingAnimation.AnimationPercent false false
+                | Meeple.Ex ->
+                    drawEx Colors.meepleEx multiplier canvas tileRect drawingAnimation.AnimationPercent false false
             | SubBoardWinner sb ->
                 match sb.Winner with
                 | None -> ()
@@ -418,14 +466,29 @@ module internal Render =
 
                     match p.Meeple with
                     | Meeple.Oh ->
-                        drawOh Colors.meepleOh multiplier canvas subBoardRect drawingAnimation.AnimationPercent false
+                        drawOh
+                            Colors.meepleOh
+                            multiplier
+                            canvas
+                            subBoardRect
+                            drawingAnimation.AnimationPercent
+                            false
+                            true
                     | Meeple.Ex ->
-                        drawEx Colors.meepleEx multiplier canvas subBoardRect drawingAnimation.AnimationPercent false
+                        drawEx
+                            Colors.meepleEx
+                            multiplier
+                            canvas
+                            subBoardRect
+                            drawingAnimation.AnimationPercent
+                            false
+                            true
             | Winner boardWinner ->
                 drawWinner
                     (Some boardWinner)
                     canvas
-                    (SKRect(0.0f, 0.0f, float32 clientGameModel.Size, float32 clientGameModel.Size))
+                    (SKRect
+                        (offset, offset, float32 clientGameModel.Size + offset, float32 clientGameModel.Size + offset))
                     drawingAnimation.AnimationPercent
                     5.0f
                     false)
