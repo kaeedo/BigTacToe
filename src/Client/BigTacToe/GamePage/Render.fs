@@ -284,35 +284,30 @@ module internal Render =
 
             canvas.DrawRect(tileRect, smallPaint))
 
-    let drawBoard (args: SKPaintSurfaceEventArgs) (clientGameModel: ClientGameModel) =
-        let board = clientGameModel.GameModel.Board
-
+    let drawBoard (args: SKPaintSurfaceEventArgs) (board: Board) size =
         let blurred, normal =
             board.SubBoards
             |> Seq.cast<SubBoard>
             |> Seq.toList
             |> List.partition (fun sb -> board.Winner.IsSome || sb.Winner.IsSome)
 
-        blurred
-        |> Seq.iter (drawSubBoard args (clientGameModel.Size))
+        blurred |> Seq.iter (drawSubBoard args size)
 
-        normal
-        |> Seq.iter (drawSubBoard args (clientGameModel.Size))
+        normal |> Seq.iter (drawSubBoard args size)
 
-    let drawWinners (args: SKPaintSurfaceEventArgs) (clientGameModel: ClientGameModel) =
-        let board = clientGameModel.GameModel.Board
+    let drawWinners (args: SKPaintSurfaceEventArgs) (gameModel: GameModel) runningAnimation size =
+        let board = gameModel.Board
         use canvas = args.Surface.Canvas
 
         let offset =
-            let difference =
-                args.Info.Size.Width - clientGameModel.Size
+            let difference = args.Info.Size.Width - size
 
             float32 difference / 2.0f
 
         board.SubBoards
         |> Seq.cast<SubBoard>
         |> Seq.filter (fun sb ->
-            match clientGameModel.RunningAnimation with
+            match runningAnimation with
             | None -> true
             | Some ra ->
                 match ra.Drawing with
@@ -324,36 +319,34 @@ module internal Render =
         |> Seq.iter (fun sb ->
             let (i, j) = sb.Index
 
-            let subBoardRect =
-                calculateSubBoardRect offset i j (clientGameModel.Size)
+            let subBoardRect = calculateSubBoardRect offset i j (size)
 
             let shouldBlur = board.Winner.IsSome
 
             drawWinner sb.Winner canvas subBoardRect 1.0f 3.0f shouldBlur)
 
-        let isAnimatingGameWinner = clientGameModel.RunningAnimation.IsSome
+        let isAnimatingGameWinner = runningAnimation.IsSome
 
         if not isAnimatingGameWinner then
             drawWinner
                 board.Winner
                 canvas
-                (SKRect(offset, offset, float32 clientGameModel.Size + offset, float32 clientGameModel.Size + offset))
+                (SKRect(offset, offset, float32 size + offset, float32 size + offset))
                 1.0f
                 5.0f
                 false
 
-    let drawMeeple (args: SKPaintSurfaceEventArgs) (clientGameModel: ClientGameModel) =
+    let drawMeeple (args: SKPaintSurfaceEventArgs) (gameModel: GameModel) runningAnimation size =
         use canvas = args.Surface.Canvas
 
         let offset =
-            let difference =
-                args.Info.Size.Width - clientGameModel.Size
+            let difference = args.Info.Size.Width - size
 
             float32 difference / 2.0f
 
-        clientGameModel.GameModel.GameMoves
+        gameModel.GameMoves
         |> Seq.filter (fun gm ->
-            match clientGameModel.RunningAnimation with
+            match runningAnimation with
             | None -> true
             | Some ra ->
                 match ra.Drawing with
@@ -361,26 +354,22 @@ module internal Render =
                 | _ -> true)
         |> Seq.iter (fun gameMove ->
             let tileRect =
-                getTileRect gameMove.PositionPlayed (clientGameModel.Size) offset
+                getTileRect gameMove.PositionPlayed size offset
 
             let (sbi, sbj), _ = gameMove.PositionPlayed
 
             let shouldDraw =
                 let isLatestPlayInSubBoard =
-                    ((clientGameModel.GameModel.GameMoves |> List.head)
-                        .PositionPlayed
+                    ((gameModel.GameMoves |> List.head).PositionPlayed
                      |> fst) = (sbi, sbj)
 
-                clientGameModel.GameModel.Board.SubBoards.[sbi, sbj]
-                    .Winner.IsNone
-                || (clientGameModel.RunningAnimation.IsSome
-                    && isLatestPlayInSubBoard)
+                gameModel.Board.SubBoards.[sbi, sbj].Winner.IsNone
+                || (runningAnimation.IsSome && isLatestPlayInSubBoard)
 
             let shouldBlur =
-                clientGameModel.GameModel.Board.Winner.IsSome
-                || (clientGameModel.GameModel.Board.SubBoards.[sbi, sbj]
-                        .Winner.IsSome
-                    && clientGameModel.RunningAnimation.IsNone)
+                gameModel.Board.Winner.IsSome
+                || (gameModel.Board.SubBoards.[sbi, sbj].Winner.IsSome
+                    && runningAnimation.IsNone)
 
             match shouldDraw, shouldBlur with
             | false, _ -> ()
@@ -393,11 +382,11 @@ module internal Render =
                 then drawEx Colors.meepleExMuted 1.0f canvas tileRect 1.0f true false
                 else drawOh Colors.meepleOhMuted 1.0f canvas tileRect 1.0f true false)
 
-    let drawHighlights (args: SKPaintSurfaceEventArgs) (clientGameModel: ClientGameModel) =
+    let drawHighlights (args: SKPaintSurfaceEventArgs) (gameModel: GameModel) size =
         use canvas = args.Surface.Canvas
 
         let color =
-            (match clientGameModel.GameModel.CurrentPlayer.Meeple with
+            (match gameModel.CurrentPlayer.Meeple with
              | Meeple.Ex -> Colors.meepleEx
              | Meeple.Oh -> Colors.meepleOh)
                 .WithAlpha(255uy)
@@ -408,14 +397,12 @@ module internal Render =
         use paint =
             new SKPaint(IsStroke = true, StrokeWidth = largeStroke, ImageFilter = fillShadow)
 
-        let size = clientGameModel.Size
-
         let offset =
             let difference = args.Info.Size.Width - size
             float32 difference / 2.0f
 
         let highlightedSubBoards =
-            clientGameModel.GameModel.Board.SubBoards
+            gameModel.Board.SubBoards
             |> Seq.cast<SubBoard>
             |> Seq.filter (fun sb -> sb.IsPlayable)
 
@@ -428,22 +415,21 @@ module internal Render =
             canvas.DrawRect(subBoardRect, paint))
 
 
-    let startAnimations (args: SKPaintSurfaceEventArgs) (clientGameModel: ClientGameModel) =
+    let startAnimations (args: SKPaintSurfaceEventArgs) (fameModel: GameModel) runningAnimation size =
         use canvas = args.Surface.Canvas
 
         let offset =
-            let difference =
-                args.Info.Size.Width - clientGameModel.Size
+            let difference = args.Info.Size.Width - size
 
             float32 difference / 2.0f
 
 
-        clientGameModel.RunningAnimation
+        runningAnimation
         |> Option.iter (fun drawingAnimation ->
             match drawingAnimation.Drawing with
             | GameMove gm ->
                 let tileRect =
-                    getTileRect gm.PositionPlayed (clientGameModel.Size) offset
+                    getTileRect gm.PositionPlayed size offset
 
                 let multiplier = 1.0f
 
@@ -459,8 +445,7 @@ module internal Render =
                 | Some (Participant p) ->
                     let (i, j) = sb.Index
 
-                    let subBoardRect =
-                        calculateSubBoardRect offset i j (clientGameModel.Size)
+                    let subBoardRect = calculateSubBoardRect offset i j size
 
                     let multiplier = 3.0f
 
@@ -487,8 +472,7 @@ module internal Render =
                 drawWinner
                     (Some boardWinner)
                     canvas
-                    (SKRect
-                        (offset, offset, float32 clientGameModel.Size + offset, float32 clientGameModel.Size + offset))
+                    (SKRect(offset, offset, float32 size + offset, float32 size + offset))
                     drawingAnimation.AnimationPercent
                     5.0f
                     false)

@@ -23,7 +23,7 @@ module private App =
         | GamePageMsg of GameMsg
 
         | GoToAiGame
-        | GoToHotSeatGame
+        | GoToLocalGame
         | GoToMatchmakingGame
         | GoToPrivateGame
 
@@ -37,7 +37,7 @@ module private App =
         | MainMenuExternalMsg.NavigateToGame opponent ->
             match opponent with
             | Ai -> Cmd.ofMsg GoToAiGame
-            | HotSeat -> Cmd.ofMsg GoToHotSeatGame
+            | HotSeat -> Cmd.ofMsg GoToLocalGame
             | Random -> Cmd.ofMsg GoToMatchmakingGame
             | Private -> Cmd.ofMsg GoToPrivateGame
 
@@ -112,7 +112,7 @@ module private App =
                   GameId = 0 }
 
             { model with GamePageModel = Some m }, (Cmd.map GamePageMsg cmd)
-        | GoToHotSeatGame ->
+        | GoToLocalGame ->
             let participant =
                 { Participant.PlayerId = Guid.NewGuid()
                   Meeple = Meeple.Ex }
@@ -203,11 +203,19 @@ module private App =
             { Pages.MainMenuPage = mainMenuPage
               GamePage = gamePage }
 
-        View.NavigationPage
-            (hasNavigationBar = false, popped = (fun _ -> dispatch NavigationPopped), pages = getPages allPages)
+        let navigationPopped (e: NavigationEventArgs) =
+            //dispatch NavigationPopped
+            ()
+//            if gamePage.IsSome
+//            then (GamePageMsg >> dispatch) DisplayGameQuitAlert
+//            else dispatch NavigationPopped
+        
+        (View.NavigationPage
+            (hasNavigationBar = true, popped = navigationPopped, pages = getPages allPages))
+            
 
-    // Note, this declaration is needed if you enable LiveUpdate
     let program = Program.mkProgram init update view
+
 
 type App() as app =
     inherit Application()
@@ -218,41 +226,5 @@ type App() as app =
         //|> Program.withConsoleTrace
 #endif
         |> XamarinFormsProgram.run app
+        
 
-//Cmd.SignalR.send model.Hub (Action.QuitGame (model.GameId, model.MyStatus.PlayerId)), GameExternalMsg.NavigateToMainMenu
-
-// Uncomment this code to save the application state to app.Properties using Newtonsoft.Json
-// See https://fsprojects.github.io/Fabulous/Fabulous.XamarinForms/models.html#saving-application-state for further  instructions.
-(*
-    let modelId = "model"
-
-    override __.OnSleep() =
-
-        let json =
-            Newtonsoft.Json.JsonConvert.SerializeObject(runner.CurrentModel)
-
-        Console.WriteLine("OnSleep: saving model into app.Properties, json = {0}", json)
-
-        app.Properties.[modelId] <- json
-
-    override __.OnResume() =
-        Console.WriteLine "OnResume: checking for model in app.Properties"
-        try
-            match app.Properties.TryGetValue modelId with
-            | true, (:? string as json) ->
-
-                Console.WriteLine("OnResume: restoring model from app.Properties, json = {0}", json)
-
-                let model =
-                    Newtonsoft.Json.JsonConvert.DeserializeObject<Model>(json)
-
-                Console.WriteLine("OnResume: restoring model from app.Properties, model = {0}", (sprintf "%0A" model))
-                runner.SetCurrentModel(model, Cmd.none)
-
-            | _ -> ()
-        with ex -> App.program.onError ("Error while restoring model found in app.Properties", ex)
-
-    override this.OnStart() =
-        Console.WriteLine "OnStart: using same logic as OnResume()"
-        this.OnResume()
-        *)

@@ -36,7 +36,7 @@ module internal MainMenu =
         | MainMenuMsg.NavigateToPrivateGame -> model, Cmd.none, MainMenuExternalMsg.NavigateToGame Private
 
     let view model dispatch =
-        View.ContentPage
+        (View.ContentPage
             (content =
                 View.Grid
                     (rowdefs = [Absolute 50.0; Star; Absolute 50.0; Absolute 50.0],
@@ -73,5 +73,6 @@ module internal MainMenu =
                             command = (fun () -> dispatch MainMenuMsg.NavigateToPrivateGame),
                             cornerRadius = 10
                         ).Row(3).Column(1)
-                     ]))
+                     ])))
+            .HasNavigationBar(false)
 

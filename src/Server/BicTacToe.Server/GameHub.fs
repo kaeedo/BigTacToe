@@ -23,12 +23,12 @@ module GameHub =
             hubContext.Services.GetService<GameManager.Manager>()
             
         let sendMessage = sendMessage hubContext
-        printfn "Received: {%O}" msg
+        //printfn "Received: {%O}" msg
 
         match msg with
         | Action.OnConnect playerId ->
             // TODO: move to invoke
-            printfn "%A has connected" playerId
+            //printfn "%A has connected" playerId
             task {
                 do! hubContext.Groups.AddToGroupAsync(hubContext.Context.ConnectionId, playerId.ToString())
                 do! sendMessage playerId Response.Connected
@@ -48,12 +48,12 @@ module GameHub =
                 | NoOne -> Task.FromResult(()) :> Task
             | Error NoOngoingGames ->
                 let newGameId = manager.StartGame playerId
-                printfn "started new game with id: {%i} for player %A" newGameId playerId
+                //printfn "started new game with id: {%i} for player %A" newGameId playerId
                 Task.FromResult(()) :> Task
             | Error _ -> Task.FromResult(()) :> Task // TODO: FIX THIS
         | Action.MakeMove (gameId, gameMove) ->
             // TODO: move to invoke// TODO: move to invoke
-            printfn "Received make move: %A" (gameId, gameMove)
+            //printfn "Received make move: %A" (gameId, gameMove)
 
             match manager.PlayPosition gameId gameMove with
             | Error e -> Task.FromResult(()) :> Task
@@ -114,7 +114,6 @@ module GameHub =
                                  sendMessage p2.PlayerId Response.UnrecoverableError)
                 | NoOne -> Task.FromResult(()) :> Task
             | Error _ -> Task.FromResult(()) :> Task
-
 
     let private config =
         { SignalR.Config.Default<Action, Response>() with

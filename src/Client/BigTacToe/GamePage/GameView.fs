@@ -7,6 +7,7 @@ open Fabulous.XamarinForms
 open Fabulous.XamarinForms.SkiaSharp
 open Xamarin.Forms
 open BigTacToe.Shared
+open Xamarin.Forms
 
 [<RequireQualifiedAccess>]
 module internal Game =
@@ -16,10 +17,10 @@ module internal Game =
         let gameBoard =
             View.StackLayout
                 (children =
-                    [ dependsOn (model.Size, gm.Board, model.RunningAnimation) (fun _ _ ->
+                    [ dependsOn (model.Size, gm, model.RunningAnimation, model.Canvas) (fun model (size, gameModel, runningAnimation, canvas) ->
                           View.SKCanvasView
                               (invalidate = true,
-                               ref = model.Canvas,
+                               ref = canvas,
                                enableTouchEvents = true,
                                verticalOptions = LayoutOptions.FillAndExpand,
                                horizontalOptions = LayoutOptions.FillAndExpand,
@@ -30,18 +31,18 @@ module internal Game =
                                        args.Surface.Canvas.Clear()
 
                                        let hasGameStarted =
-                                           model.GameModel.GameMoves |> List.isEmpty |> not
+                                           gameModel.GameMoves |> List.isEmpty |> not
 
-                                       Render.drawBoard args model
+                                       Render.drawBoard args gameModel.Board size
 
-                                       if hasGameStarted then Render.drawMeeple args model
+                                       if hasGameStarted then Render.drawMeeple args gameModel runningAnimation size 
 
-                                       if model.GameModel.Board.Winner.IsNone
+                                       if gameModel.Board.Winner.IsNone
                                           && hasGameStarted then
-                                           Render.drawHighlights args model
+                                           Render.drawHighlights args gameModel size
 
-                                       Render.drawWinners args model
-                                       Render.startAnimations args model),
+                                       Render.drawWinners args gameModel runningAnimation size
+                                       Render.startAnimations args gameModel runningAnimation size),
                                touch =
                                    (fun args ->
                                        if args.InContact
@@ -138,6 +139,11 @@ module internal Game =
 
                   (View.StackLayout(height = 30.0, children = [ View.ActivityIndicator(isRunning = true) ]))
                       .Row(2) ]
+                
+        let footerNavigation =
+            (View.FlexLayout
+                    (children = [ View.Button(text = "Main Menu", command = fun () -> dispatch GoToMainMenu) ]))
+                    .Row(3)
 
         let children model =
             match model.OpponentStatus with
@@ -156,28 +162,31 @@ module internal Game =
                 [ yield! multiplayerText model
                   gameBoard.Row(2)
 
-                  (View.FlexLayout
-                      (children = [ View.Button(text = "Main Menu", command = fun () -> dispatch GoToMainMenu) ]))
-                      .Row(3) ]
+                  footerNavigation ]
             | WaitingForPrivate gameId -> waitingForPrivate gameId model
             | LocalAiGame ->
                 [ yield! multiplayerText model
-                  gameBoard.Row(2) ]
+                  gameBoard.Row(2)
+                  footerNavigation ]
             | LocalGame ->
                 [ yield! localGameText model
-                  gameBoard.Row(2) ]
+                  gameBoard.Row(2)
+                  footerNavigation ]
 
+        let grid =
+            View.Grid
+                (rowdefs =
+                    [ Absolute 75.0
+                      Absolute 50.0
+                      Star
+                      Absolute 50.0 ],
+                 coldefs = [ Star ],
+                 padding = Thickness 20.0,
+                 children = children model)
+                
         let page =
-            View.ContentPage
-                (content =
-                    View.Grid
-                        (rowdefs =
-                            [ Absolute 75.0
-                              Absolute 50.0
-                              Star
-                              Absolute 50.0 ],
-                         coldefs = [ Star ],
-                         padding = Thickness 20.0,
-                         children = children model))
+            (View.ContentPage
+                (content = grid))
+                .HasNavigationBar(false)
 
         page
