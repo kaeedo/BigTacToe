@@ -58,10 +58,6 @@ module LoadTests =
 
                     hub.OnMessage(fun m ->
                         async {
-                            match m with
-                            | SignalRHub.Response.GameStarted (gameId, _) -> test <@ gameId > 999 && gameId < 10000 @>
-                            | _ -> ()
-                            
                             stopWaitHandle.Set() |> ignore
                         }) |> ignore
 
