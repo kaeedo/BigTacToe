@@ -48,7 +48,6 @@ module private App =
 
     let init () =
         let mainMenuPageModel, mainPageMessage = MainMenu.init ()
-        //let gamePageModel, gamePageMsg = GamePage.Types.initModel (), Cmd.none
 
         let pages =
             { Model.MainMenuPageModel = mainMenuPageModel
@@ -209,10 +208,12 @@ module private App =
 //            if gamePage.IsSome
 //            then (GamePageMsg >> dispatch) DisplayGameQuitAlert
 //            else dispatch NavigationPopped
-        
-        (View.NavigationPage
-            (hasNavigationBar = true, popped = navigationPopped, pages = getPages allPages))
-            
+
+
+        NavigationPage.navigationPage [
+                NavigationPage.OnPopped navigationPopped
+                NavigationPage.Pages <| getPages allPages
+            ]            
 
     let program = Program.mkProgram init update view
 
