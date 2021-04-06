@@ -46,6 +46,7 @@ module internal Game =
 
         let gameBoard =
             StackLayout.stackLayout [
+                StackLayout.Row 2
                 StackLayout.Children [
                     dependsOn (model.Size, gm, model.RunningAnimation, model.Canvas) (fun model (size, gameModel, runningAnimation, canvas) ->
                         canvasView size gameModel runningAnimation canvas
@@ -176,34 +177,25 @@ module internal Game =
                   ]
                   spinner
                 ]
+            | WaitingForPrivate gameId -> waitingForPrivate gameId model
             | Quit
+            | LocalAiGame
+            | LocalGame
             | Joined _ ->
                 [ gameText model
-                  gameBoard.Row(2)
-
-                  footerNavigation ]
-            | WaitingForPrivate gameId -> waitingForPrivate gameId model
-            | LocalAiGame ->
-                [ gameText model
-                  gameBoard.Row(2)
-                  footerNavigation ]
-            | LocalGame ->
-                [ gameText model
-                  gameBoard.Row(2)
+                  gameBoard
                   footerNavigation ]
 
-        let grid =
-            Grid.grid [
-                Grid.Rows [ Absolute 75.0; Absolute 50.0; Star; Absolute 50.0 ]
-                Grid.Columns [Star]
-                Grid.Padding 20.0
-                Grid.Children <| children model
-            ]
-                
         let page =
             ContentPage.contentPage [
                 ContentPage.HasNavigationBar false
-                ContentPage.Content grid
+                ContentPage.Content <|
+                    Grid.grid [
+                    Grid.Rows [ Absolute 75.0; Absolute 50.0; Star; Absolute 50.0 ]
+                    Grid.Columns [Star]
+                    Grid.Padding 20.0
+                    Grid.Children <| children model
+                ]
             ]
 
         page

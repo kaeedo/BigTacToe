@@ -11,9 +11,13 @@
     <ItemGroup>
         <PackageReference Include="Expecto" Version="9.0.2" />
         <PackageReference Include="Fable.SignalR.DotNet" Version="0.11.2" />
+        <PackageReference Include="Microsoft.AspNetCore.Hosting" Version="2.2.7" />
+        <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="5.0.4" />
+        <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="5.0.4" />
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.9.4" />
         <PackageReference Include="NBomber.FSharp" Version="0.0.2" />
         <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+        <PackageReference Include="Ply" Version="0.3.1" />
         <PackageReference Include="Unquote" Version="5.0.0" />
         <PackageReference Include="YoloDev.Expecto.TestSdk" Version="0.11.1" />
     </ItemGroup>
@@ -24,6 +28,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\..\src\Server\BicTacToe.Server\BicTacToe.Server.fsproj" />
       <ProjectReference Include="..\..\src\Shared\BicTacToe.Shared\BicTacToe.Shared.fsproj" />
     </ItemGroup>
 
