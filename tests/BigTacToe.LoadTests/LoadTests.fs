@@ -1,14 +1,12 @@
 ﻿namespace BigTacToe.LoadTests
 
 open System
-open System.Threading.Tasks
 open BicTacToe.Server
 open BigTacToe.Shared
 open Expecto
 open Fable.SignalR
 open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.Hosting
-open Microsoft.AspNetCore.Http.Connections
 open Microsoft.AspNetCore.TestHost
 open NBomber.Contracts
 open FSharp.Control.Tasks.V2.ContextInsensitive
@@ -27,7 +25,6 @@ module LoadTests =
                     let playerId = Guid.NewGuid()
 
                     let baseAddress = testServer.BaseAddress.ToString().TrimEnd('/')
-                    use stopWaitHandle = new AutoResetEvent(false)
                     let hub: HubConnection<SignalRHub.Action, unit, unit, SignalRHub.Response, unit> =
                         SignalR.Connect<SignalRHub.Action, unit, unit, SignalRHub.Response, unit>(fun hub ->
                             hub
@@ -39,21 +36,9 @@ module LoadTests =
 
                     do! hub.Start() |> Async.StartAsTask
                     
-                    do! hub.Send(SignalRHub.Action.OnConnect playerId)
-                        |> Async.StartAsTask
+                    let! response =  hub.Invoke(SignalRHub.Action.OnConnect playerId) |> Async.StartAsTask
                         
-                    hub.OnMessage(fun m ->
-                        async {
-                            match m with
-                            | SignalRHub.Response.Connected ->
-                                ctx.Logger.Debug(sprintf "Player with ID: {%A} connected" playerId)
-                                stopWaitHandle.Set() |> ignore
-                        }
-                        )
-                    |> ignore
-                    
-                    stopWaitHandle.WaitOne() |> ignore
-                        
+                    ctx.Logger.Debug(sprintf "Player with ID: {%A} connected" response)
                         
                     ctx.Data.["playerId"] <- playerId
                     ctx.Data.["hub"] <- hub
@@ -148,7 +133,6 @@ module LoadTests =
                   let scn =
                       scenario "scenario 1" {
                           load [ KeepConstant(50, seconds 30) ]
-                          //warmUp (seconds 5)
                           steps [ step1 testServer; step2; step3 ]
                       }
 

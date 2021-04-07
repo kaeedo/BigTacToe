@@ -112,8 +112,8 @@ module internal Messages =
 
             let cmd =
                 match model.OpponentStatus with
-                | LookingForGame -> Cmd.SignalR.send hub (Action.OnConnect playerId)
-                | WaitingForPrivate _ -> Cmd.SignalR.send hub (Action.OnConnect playerId)
+                | LookingForGame -> Cmd.SignalR.perform hub (Action.OnConnect playerId) SignalRMessage
+                | WaitingForPrivate _ -> Cmd.SignalR.perform hub (Action.OnConnect playerId) SignalRMessage
                 | _ -> Cmd.none
 
             { model with Hub = hub }, cmd, GameExternalMsg.NoOp
@@ -154,7 +154,7 @@ module internal Messages =
             let playerId = model.GameModel.CurrentPlayer.PlayerId
 
             let cmd =
-                Cmd.SignalR.send model.Hub (Action.HostPrivateGame playerId)
+                Cmd.SignalR.perform model.Hub (Action.HostPrivateGame playerId) SignalRMessage
 
             model, cmd, GameExternalMsg.NoOp
 

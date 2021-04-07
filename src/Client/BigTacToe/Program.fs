@@ -11,16 +11,20 @@ open System
 
 module private App =
     type Model =
-        { MainMenuPageModel: MainMenuModel
+        { PlayerId: Guid
+          MainMenuPageModel: obj
+          HelpPageModel: obj option
           GamePageModel: ClientGameModel option }
 
     type Pages =
         { MainMenuPage: ViewElement
+          HelpPage: ViewElement option
           GamePage: ViewElement option }
 
     type Msg =
         | MainMenuPageMsg of MainMenuMsg
         | GamePageMsg of GameMsg
+        | HelpPageMsg of HelpMsg
 
         | GoToAiGame
         | GoToLocalGame
@@ -28,6 +32,8 @@ module private App =
         | GoToPrivateGame
 
         | GoToMainMenu
+        
+        | GoToHelp
 
         | NavigationPopped
 
@@ -40,30 +46,49 @@ module private App =
             | HotSeat -> Cmd.ofMsg GoToLocalGame
             | Random -> Cmd.ofMsg GoToMatchmakingGame
             | Private -> Cmd.ofMsg GoToPrivateGame
+        | MainMenuExternalMsg.NavigateToHelp -> Cmd.ofMsg GoToHelp
 
     let handleGameExternalMsg externalMsg =
         match externalMsg with
         | GameExternalMsg.NoOp -> Cmd.none
         | GameExternalMsg.NavigateToMainMenu -> Cmd.ofMsg GoToMainMenu
+        
+    let handleHelpExternalMsg externalMsg =
+        match externalMsg with
+        | HelpExternalMsg.NoOp -> Cmd.none
+        | HelpExternalMsg.NavigateToMainMenu -> Cmd.ofMsg GoToMainMenu
 
     let init () =
+        let playerId =
+#if __ANDROID__
+            let guid = Xamarin.Essentials.Preferences.Get("PlayerId", Guid.NewGuid().ToString())
+            if not <| Xamarin.Essentials.Preferences.ContainsKey("PlayerId")
+            then Xamarin.Essentials.Preferences.Set("PlayerId", guid)
+            Guid.Parse(guid)
+#else
+            Guid.NewGuid()
+#endif
+            
         let mainMenuPageModel, mainPageMessage = MainMenu.init ()
 
         let pages =
-            { Model.MainMenuPageModel = mainMenuPageModel
+            { Model.PlayerId = playerId
+              MainMenuPageModel = mainMenuPageModel
+              HelpPageModel = None
               GamePageModel = None }
 
         pages, (Cmd.map MainMenuPageMsg mainPageMessage)
 
 
-    let navigationMapper (model: Model) =
-        let gameModel = model.GamePageModel
-
-        match gameModel with
-        | None -> model
-        | Some _ -> { model with GamePageModel = None }
+    let popNavigationPage (model: Model) =
+        match model.GamePageModel, model.HelpPageModel with
+        | None, None _ -> model
+        | None, Some _ -> { model with HelpPageModel = None }
+        | Some _, None -> { model with GamePageModel = None }
+        | Some _, Some _ -> { model with GamePageModel = None; HelpPageModel = None }
 
     let update msg model =
+        let playerId = model.PlayerId
         match msg with
         | MainMenuPageMsg msg ->
             let m, cmd, externalMsg =
@@ -83,11 +108,18 @@ module private App =
             { model with GamePageModel = Some m },
             Cmd.batch [ (Cmd.map GamePageMsg cmd)
                         cmd2 ]
+        | HelpPageMsg msg ->
+            let m, cmd, externalMsg = Help.update msg model.HelpPageModel.Value
+            
+            let cmd2 = handleHelpExternalMsg externalMsg
+            
+            { model with HelpPageModel = Some m },
+            Cmd.batch [(Cmd.map HelpPageMsg cmd); cmd2]
 
-        | NavigationPopped -> navigationMapper model, Cmd.none
+        | NavigationPopped -> popNavigationPage model, Cmd.none
         | GoToAiGame ->
             let participant =
-                { Participant.PlayerId = Guid.NewGuid()
+                { Participant.PlayerId = playerId
                   Meeple = Meeple.Ex }
 
             let opponent =
@@ -113,7 +145,7 @@ module private App =
             { model with GamePageModel = Some m }, (Cmd.map GamePageMsg cmd)
         | GoToLocalGame ->
             let participant =
-                { Participant.PlayerId = Guid.NewGuid()
+                { Participant.PlayerId = playerId
                   Meeple = Meeple.Ex }
 
             let opponent =
@@ -139,7 +171,7 @@ module private App =
             { model with GamePageModel = Some m }, (Cmd.map GamePageMsg cmd)
         | GoToMatchmakingGame ->
             let participant =
-                { Participant.PlayerId = Guid.NewGuid()
+                { Participant.PlayerId = playerId
                   Meeple = Meeple.Ex }
 
             let newGm = GameModel.init (OnePlayer participant)
@@ -161,7 +193,7 @@ module private App =
         | GoToPrivateGame ->
             // TODO: This
             let participant =
-                { Participant.PlayerId = Guid.NewGuid()
+                { Participant.PlayerId = playerId
                   Meeple = Meeple.Ex }
 
             let newGm = GameModel.init (OnePlayer participant)
@@ -179,16 +211,19 @@ module private App =
                   GameId = 0 }
 
             { model with GamePageModel = Some m }, (Cmd.map GamePageMsg cmd)
-        | GoToMainMenu -> navigationMapper { model with GamePageModel = None }, Cmd.none
-
+        | GoToMainMenu -> popNavigationPage { model with GamePageModel = None }, Cmd.none
+        | GoToHelp -> { model with HelpPageModel = Some <| obj() }, Cmd.none
+        
     let getPages (allPages: Pages) =
         let mainMenuPage = allPages.MainMenuPage
         let gamePage = allPages.GamePage
+        let helpPage = allPages.HelpPage
 
-        match gamePage with
-        | None -> [ mainMenuPage ]
-        | Some gp -> [ mainMenuPage; gp ]
-
+        match helpPage, gamePage with
+        | None, None -> [ mainMenuPage ]
+        | Some hp, None -> [ mainMenuPage; hp ]
+        | None, Some gp -> [ mainMenuPage; gp ]
+        | Some hp, Some gp -> [ mainMenuPage; hp;  gp ]
 
     let view (model: Model) dispatch =
         let mainMenuPage =
@@ -197,21 +232,18 @@ module private App =
         let gamePage =
             model.GamePageModel
             |> Option.map (fun gpm -> Game.view gpm (GamePageMsg >> dispatch))
+            
+        let helpPage =
+            model.HelpPageModel
+            |> Option.map (fun hpm -> Help.view hpm (HelpPageMsg >> dispatch))
 
         let allPages =
             { Pages.MainMenuPage = mainMenuPage
+              HelpPage = helpPage
               GamePage = gamePage }
 
-        let navigationPopped (e: NavigationEventArgs) =
-            //dispatch NavigationPopped
-            ()
-//            if gamePage.IsSome
-//            then (GamePageMsg >> dispatch) DisplayGameQuitAlert
-//            else dispatch NavigationPopped
-
-
         NavigationPage.navigationPage [
-                NavigationPage.OnPopped navigationPopped
+                NavigationPage.OnPopped (fun _ -> dispatch NavigationPopped)
                 NavigationPage.Pages <| getPages allPages
             ]            
 

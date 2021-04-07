@@ -13,6 +13,8 @@
     <Compile Include="GamePage\Messages.fs" />
     <Compile Include="GamePage\Render.fs" />
     <Compile Include="GamePage\GameView.fs" />
+    <Compile Include="HelpPage\HelpView.fs" />
+    <Compile Include="MainMenuPage\Types.fs" />
     <Compile Include="MainMenuPage\MainMenuView.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
