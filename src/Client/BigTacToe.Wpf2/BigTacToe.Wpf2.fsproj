@@ -9,9 +9,9 @@
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.fs" />
     <Compile Include="App.fs" />
-    <Resource Include="placeholder.png">
+    <EmbeddedResource Include="BigTacToe.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Resource>
+    </EmbeddedResource>
     <None Include="app.config" />
   </ItemGroup>
   <ItemGroup>

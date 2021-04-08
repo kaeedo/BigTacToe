@@ -3,9 +3,12 @@
 open Fabulous.XamarinForms
 open Xamarin.Forms
 open Fabulous
+open BigTacToe.Components
 
 [<RequireQualifiedAccess>]
 module internal MainMenu =
+    let fontSize = FontSize.Size 18.0
+    
     let init () = MainMenuModel(), Cmd.none
 
     let update message model =
@@ -15,6 +18,8 @@ module internal MainMenu =
         | MainMenuMsg.NavigateToMatchmakingGame -> model, Cmd.none, MainMenuExternalMsg.NavigateToGame Random
         | MainMenuMsg.NavigateToPrivateGame -> model, Cmd.none, MainMenuExternalMsg.NavigateToGame Private
         | MainMenuMsg.NavigateToHelp -> model, Cmd.none, MainMenuExternalMsg.NavigateToHelp
+        
+    
 
     let view model dispatch =
         ContentPage.contentPage [
@@ -27,7 +32,8 @@ module internal MainMenu =
                     Grid.Children [
                         Label.label [
                             Label.Text "Big Tac Toe"
-                            Label.FontSize <| FontSize.Size 36.0
+                            Label.TextColor Color.Black
+                            Label.FontSize <| FontSize.Size 40.0
                             Label.HorizontalTextAlignment TextAlignment.Center
                             Label.ColumnSpan 4
                         ]
@@ -43,7 +49,7 @@ module internal MainMenu =
                             Button.OnClick (fun () -> dispatch MainMenuMsg.NavigateToHelp)
                         ]
                         Image.image [
-                            Image.Source <| Image.fromPath "placeholder.png"
+                            Image.Source <| Image.fromPath "BigTacToe.png"
                             Image.Aspect Aspect.AspectFit
                             Image.Row 1
                             Image.ColumnSpan 4
@@ -57,24 +63,8 @@ module internal MainMenu =
                             Grid.RowSpacing 0.0
                             Grid.ColumnSpacing 0.0
                             Grid.Children [
-                                Button.button [
-                                    Button.Row 0
-                                    Button.Column 0
-                                    Button.BackgroundColor Color.Transparent
-                                    Button.BorderColor Color.Transparent
-                                    Button.FontSize <| FontSize.Size 18.0
-                                    Button.Text "Play vs. CPU"
-                                    Button.OnClick (fun () -> dispatch MainMenuMsg.NavigateToAiGame)
-                                ]
-                                Button.button [
-                                    Button.Row 0
-                                    Button.Column 2
-                                    Button.BackgroundColor Color.Transparent
-                                    Button.BorderColor Color.Transparent
-                                    Button.FontSize <| FontSize.Size 18.0
-                                    Button.Text "Pass the phone"
-                                    Button.OnClick (fun () -> dispatch MainMenuMsg.NavigateToHotSeatGame)
-                                ]
+                                IconButton.iconButton [Frame.Row 0; Frame.Column 0] "cpu" "Play vs. CPU" (fun () -> dispatch MainMenuMsg.NavigateToAiGame)
+                                IconButton.iconButton [Frame.Row 0; Frame.Column 2] "passPhone" "2P. offline" (fun () -> dispatch MainMenuMsg.NavigateToHotSeatGame)
                                 StackLayout.stackLayout [
                                     StackLayout.Column 1
                                     StackLayout.RowSpan 3
@@ -82,8 +72,8 @@ module internal MainMenu =
                                     StackLayout.Orientation StackOrientation.Horizontal
                                     StackLayout.Children [
                                         BoxView.boxView [
-                                           BoxView.Width 2.0
-                                           BoxView.Color Color.Black
+                                           BoxView.Width 1.0
+                                           BoxView.Color <| Color.FromHex("#413D21")
                                            BoxView.VerticalLayout LayoutOptions.Fill
                                         ]
                                     ]
@@ -94,30 +84,14 @@ module internal MainMenu =
                                     StackLayout.Padding 0.0
                                     StackLayout.Children [
                                         BoxView.boxView [
-                                           BoxView.Height 2.0
-                                           BoxView.Color Color.Black
+                                           BoxView.Height 1.0
+                                           BoxView.Color <| Color.FromHex("#413D21")
                                            BoxView.HorizontalLayout LayoutOptions.Fill
                                         ]
                                     ]
                                 ]
-                                Button.button [
-                                    Button.Row 2
-                                    Button.Column 0
-                                    Button.BackgroundColor Color.Transparent
-                                    Button.BorderColor Color.Transparent
-                                    Button.FontSize <| FontSize.Size 18.0
-                                    Button.Text "Find opponent"
-                                    Button.OnClick (fun () -> dispatch MainMenuMsg.NavigateToMatchmakingGame)
-                                ]
-                                Button.button [
-                                    Button.Row 2
-                                    Button.Column 2
-                                    Button.BackgroundColor Color.Transparent
-                                    Button.BorderColor Color.Transparent
-                                    Button.FontSize <| FontSize.Size 18.0
-                                    Button.Text "Private match"
-                                    Button.OnClick (fun () -> dispatch MainMenuMsg.NavigateToPrivateGame)
-                                ]
+                                IconButton.iconButton [Frame.Row 2; Frame.Column 0] "matchmaking" "Find opponent" (fun () -> dispatch MainMenuMsg.NavigateToMatchmakingGame)
+                                IconButton.iconButton [Frame.Row 2; Frame.Column 2] "privateGame" "Private match" (fun () -> dispatch MainMenuMsg.NavigateToPrivateGame)
                             ]
                         ]
                     ]

@@ -143,3 +143,49 @@ module AiPlayer =
             }
 
         positionToPlay
+
+
+
+(*
+https://ultimate-t3.herokuapp.com/local-game
+Game.prototype.minimax = function(depth, player, alpha, beta) {
+	var moves = this.getPossibleMoves();
+
+	var score, bestMove;
+
+	if (moves.length === 0 || depth === this.difficulty) {
+		score = this.getScore();
+		return {
+			score: score,
+			move: null
+		};
+	}
+
+	for (var i = 0; i < moves.length; i++) {
+		var move = moves[i];
+		this.makeMove(move);
+		score = this.minimax(depth + 1, player === "X" ? "O" : "X", alpha, beta).score;
+		if (player === this.aiPlayer) {
+			if (score > alpha) {
+				alpha = score;
+				bestMove = move;
+			}
+		}
+		else {
+			if (score < beta) {
+				beta = score;
+				bestMove = move;
+			}
+		}
+		this.undoMove();
+		if (alpha >= beta) {
+			break;
+		}
+	}
+
+	return {
+		score: (player === this.aiPlayer) ? alpha : beta,
+		move: bestMove
+	};
+};
+*)

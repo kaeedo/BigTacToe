@@ -110,7 +110,7 @@
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
-    <AndroidResource Include="Resources\drawable\placeholder.png" />
+    <AndroidResource Include="Resources\drawable\BigTacToe.png" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="FSharp.Core">

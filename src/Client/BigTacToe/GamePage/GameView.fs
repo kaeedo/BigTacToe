@@ -161,7 +161,7 @@ module internal Game =
                 FlexLayout.Row 3
                 FlexLayout.Children [
                     Button.button [
-                        Button.Text "Main Menu"
+                        Button.Text "Quit"
                         Button.OnClick (fun () -> dispatch GoToMainMenu)
                     ]
                 ]

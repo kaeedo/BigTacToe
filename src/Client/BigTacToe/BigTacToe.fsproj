@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="Components\IconButton.fs" />
     <Compile Include="GamePage\Types.fs" />
     <Compile Include="GamePage\AiPlayer.fs" />
     <Compile Include="GamePage\Animations.fs" />
