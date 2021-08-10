@@ -21,7 +21,6 @@ module Program =
 
     let configureApp (app: IApplicationBuilder) =
         app.UseStaticFiles() |> ignore
-           //.UseAuthentication()
         app.UseHttpsRedirection() |> ignore
         app.UseSignalR(GameHub.settings) |> ignore
         app.UseGiraffe(webApp) |> ignore
@@ -56,7 +55,7 @@ module Program =
 
         WebHostBuilder()
             .UseKestrel()
-            .UseUrls("http://0.0.0.0:5000")
+            .UseUrls("https://0.0.0.0:5000")
             .ConfigureAppConfiguration(configureAppConfiguration)
             .Configure(Action<IApplicationBuilder> configureApp)
             .ConfigureServices(configureServices)

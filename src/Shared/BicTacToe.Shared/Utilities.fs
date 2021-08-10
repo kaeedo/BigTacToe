@@ -34,6 +34,12 @@ module Utilities =
         |> Seq.sortBy (fun _ -> Guid.NewGuid())
         |> Seq.tryHead
 
+    let batchesOf n =
+        Seq.mapi (fun i v -> i / n, v) >>
+        Seq.groupBy fst >>
+        Seq.map snd >>
+        Seq.map (Seq.map snd)
+
 [<RequireQualifiedAccess>]
 module Array2D =
     let inline findIndex<'a when 'a: equality> (item: 'a) (array: 'a [,]) =
@@ -48,7 +54,7 @@ module Array2D =
             index / length, index % length
         else
             raise <| ArgumentException("Array must be square")
-            
+
     let inline findIndexBy<'a when 'a: equality> (predicate: 'a -> bool) (array: 'a [,]) =
         let length = array |> Array2D.length1
 
@@ -57,7 +63,7 @@ module Array2D =
                 array
                 |> Seq.cast<'a>
                 |> Seq.find predicate
-                
+
             array |> findIndex item
         else
             raise <| ArgumentException("Array must be square")

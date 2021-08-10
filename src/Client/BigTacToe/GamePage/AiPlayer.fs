@@ -49,12 +49,11 @@ module AiPlayer =
                     model.Board.SubBoards
                     |> Seq.cast<SubBoard>
                     |> Seq.filter (fun sb -> sb.IsPlayable)
-                    |> Seq.map (fun psb ->
+                    |> Seq.collect (fun psb ->
                         psb.Tiles
                         |> Seq.cast<Tile>
                         |> Seq.filter (fun (_, meeple) -> meeple.IsNone)
                         |> Seq.map (fun t -> psb, t))
-                    |> Seq.concat
                     |> Seq.map (fun pp ->
                         async {
                             let (subBoard, tile) = pp
@@ -84,10 +83,17 @@ module AiPlayer =
                                             return playOutGame (GameRules.updateModel model subBoards gameMove)
                                         }
                                 }
-                                |> Async.Parallel
+                                |> batchesOf 10
+                                |> Seq.map (fun batch ->
+                                    batch
+                                    |> Async.Parallel
+                                    //|> Async.Start
+                                )
+                                |> Async.Sequential
 
                             let bestPlay =
                                 bestPlay
+                                |> Seq.concat
                                 |> Seq.countBy id
                                 |> Seq.filter (fun (bw, _) ->
                                     match bw with

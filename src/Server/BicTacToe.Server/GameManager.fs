@@ -37,11 +37,11 @@ module GameManager =
         let rec newId id =
             if state.OngoingGames.ContainsKey(id)
                || state.PendingGames.ContainsKey(id) then
-                newId (rnd.Next(1000, 9999))
+                newId (rnd.Next(10_000, 99_999))
             else
                 id
 
-        newId (rnd.Next(1000, 9999))
+        newId (rnd.Next(10_000, 99_999))
 
     type Manager() =
         let agent =
