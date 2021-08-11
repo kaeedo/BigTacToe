@@ -57,41 +57,16 @@ module internal MainMenu =
                         Grid.grid [
                             Grid.Row 2
                             Grid.ColumnSpan 4
-                            Grid.Rows [ Star; Absolute 2.0; Star; ]
-                            Grid.Columns [ Star; Absolute 2.0; Star; ]
-                            Grid.Padding 0.0
-                            Grid.RowSpacing 0.0
-                            Grid.ColumnSpacing 0.0
+                            Grid.Rows [ Star; Star; ]
+                            Grid.Columns [ Star; Star; ]
+                            Grid.Padding 2.0
+                            Grid.RowSpacing 4.0
+                            Grid.ColumnSpacing 4.0
                             Grid.Children [
                                 IconButton.iconButton [Frame.Row 0; Frame.Column 0] "cpu" "Play vs. CPU" (fun () -> dispatch MainMenuMsg.NavigateToAiGame)
-                                IconButton.iconButton [Frame.Row 0; Frame.Column 2] "passPhone" "2P. offline" (fun () -> dispatch MainMenuMsg.NavigateToHotSeatGame)
-                                StackLayout.stackLayout [
-                                    StackLayout.Column 1
-                                    StackLayout.RowSpan 3
-                                    StackLayout.Padding 0.0
-                                    StackLayout.Orientation StackOrientation.Horizontal
-                                    StackLayout.Children [
-                                        BoxView.boxView [
-                                           BoxView.Width 1.0
-                                           BoxView.Color <| Color.FromHex("#413D21")
-                                           BoxView.VerticalLayout LayoutOptions.Fill
-                                        ]
-                                    ]
-                                ]
-                                StackLayout.stackLayout [
-                                    StackLayout.Row 1
-                                    StackLayout.ColumnSpan 3
-                                    StackLayout.Padding 0.0
-                                    StackLayout.Children [
-                                        BoxView.boxView [
-                                           BoxView.Height 1.0
-                                           BoxView.Color <| Color.FromHex("#413D21")
-                                           BoxView.HorizontalLayout LayoutOptions.Fill
-                                        ]
-                                    ]
-                                ]
-                                IconButton.iconButton [Frame.Row 2; Frame.Column 0] "matchmaking" "Find opponent" (fun () -> dispatch MainMenuMsg.NavigateToMatchmakingGame)
-                                IconButton.iconButton [Frame.Row 2; Frame.Column 2] "privateGame" "Private match" (fun () -> dispatch MainMenuMsg.NavigateToPrivateGame)
+                                IconButton.iconButton [Frame.Row 0; Frame.Column 1] "passPhone" "2P. offline" (fun () -> dispatch MainMenuMsg.NavigateToHotSeatGame)
+                                IconButton.iconButton [Frame.Row 1; Frame.Column 0] "matchmaking" "Find opponent" (fun () -> dispatch MainMenuMsg.NavigateToMatchmakingGame)
+                                IconButton.iconButton [Frame.Row 1; Frame.Column 1] "privateGame" "Private match" (fun () -> dispatch MainMenuMsg.NavigateToPrivateGame)
                             ]
                         ]
                     ]

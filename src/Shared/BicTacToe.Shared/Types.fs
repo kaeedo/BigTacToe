@@ -86,7 +86,7 @@ module SignalRHub =
     [<RequireQualifiedAccess>]
     type Action =
         | OnConnect of Guid
-        | SearchOrCreateGame of Guid
+        | JoinOrStartRandomGame of Guid
         | HostPrivateGame of Guid
         | JoinPrivateGame of GameId * Guid
         | MakeMove of GameId * GameMove
@@ -101,6 +101,7 @@ module SignalRHub =
         | GameFinished of BoardWinner
         | PlayerQuit
         | UnrecoverableError
+        | NoOp
 
 [<RequireQualifiedAccess>]
 module Endpoints =

@@ -1,6 +1,8 @@
 ﻿namespace BigTacToe.Shared
 
 open System
+open System.Collections.Generic
+open BigTacToe.Shared
 
 type MaybeBuilder() =
     member this.Bind(m, f) = Option.bind f m
@@ -67,3 +69,12 @@ module Array2D =
             array |> findIndex item
         else
             raise <| ArgumentException("Array must be square")
+            
+[<RequireQualifiedAccess>]
+module Dictionary =
+    let inline tryHead (dictionary: Dictionary<_,_>) =
+        if dictionary.Count = 0
+        then None
+        else
+            let firstKey = dictionary.Keys |> Seq.cast<int> |> Seq.head
+            Some <| (firstKey, dictionary.[firstKey])

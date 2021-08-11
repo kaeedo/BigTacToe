@@ -1,5 +1,6 @@
 ﻿namespace BigTacToe.Shared.Tests
 
+open System.Collections.Generic
 open Expecto
 open Swensen.Unquote
 open System
@@ -25,6 +26,22 @@ module UtilitiesTests =
                 let array = Array2D.init 3 3 (fun i j -> i.ToString(), j.ToString())
                 
                 test <@ array |> Array2D.findIndexBy (fun ij -> ij.ToString() = "(1, 2)") = (1, 2)  @>
+            }
+        ]
+        
+        testList "Dictionary utilities tests" [
+            Tests.test "Shouldn't find anything" {
+                let dict = Dictionary<int, string>()
+                
+                test <@ dict |> Dictionary.tryHead = None @>
+            }
+            
+            Tests.test "Should find something" {
+                let dict = Dictionary<int, string>()
+                dict.Add(1, "r")
+                dict.Add(2, "rewrg")
+                
+                test <@ (dict |> Dictionary.tryHead).IsSome @>
             }
         ]
     ]
