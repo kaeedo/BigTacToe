@@ -1,19 +1,25 @@
 ﻿namespace BigTacToe.Pages
 
-type MainMenuModel = obj
+open BigTacToe.Pages
 
-type MainMenuMsg =
-| NavigateToAiGame
-| NavigateToHotSeatGame
-| NavigateToMatchmakingGame
-| NavigateToPrivateGame
-| NavigateToHelp
+type MainMenuModel = obj
 
 type Opponent =
 | Ai
 | HotSeat
 | Random
 | Private
+
+type MainMenuMsg =
+| NavigateToAiGame
+| NavigateToHotSeatGame
+
+| CheckServerResponse of string * Opponent
+| CheckServerFailed
+
+| NavigateToOnlineGame of Opponent
+| NavigateToHelp
+| CheckServer of Opponent
 
 type MainMenuExternalMsg =
 | NoOp

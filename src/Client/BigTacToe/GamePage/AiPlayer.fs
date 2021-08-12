@@ -45,7 +45,8 @@ module AiPlayer =
     let playPosition (model: GameModel) =
         let positionToPlay =
             async {
-                let possiblePlaysAsync =
+                do! Async.Sleep 600
+                let! possiblePlays =
                     model.Board.SubBoards
                     |> Seq.cast<SubBoard>
                     |> Seq.filter (fun sb -> sb.IsPlayable)
@@ -66,7 +67,6 @@ module AiPlayer =
                                 model.Board.SubBoards.[sbi, sbj].Tiles
                                 |> Array2D.findIndex tile
 
-                            // TODO: Hopefully with more better AI this won't be needed
                             let (Some subBoards) =
                                 GameRules.tryPlayPosition model ((sbi, sbj), (ti, tj))
 
@@ -80,12 +80,10 @@ module AiPlayer =
                                                 { GameMove.Player = model.CurrentPlayer
                                                   PositionPlayed = positionPlayed }
 
-                                            do! Async.Sleep 5
-
                                             return playOutGame (GameRules.updateModel model subBoards gameMove)
                                         }
                                 }
-                                |> Async.Sequential
+                                |> Async.Parallel
 
                             let bestPlay =
                                 bestPlay
@@ -101,12 +99,6 @@ module AiPlayer =
                             return (pp, bestPlay)
                         })
                     |> Async.Parallel
-
-                let! fn1 = Async.StartChild possiblePlaysAsync
-                let! fn2 = Async.StartChild(Async.Sleep(1500))
-
-                let! possiblePlays = fn1
-                do! fn2
 
                 let possiblePlay =
                     possiblePlays

@@ -1,25 +1,57 @@
 ﻿namespace BigTacToe.Pages
 
+open System
+open BigTacToe.Pages
 open Fabulous.XamarinForms
 open Xamarin.Forms
 open Fabulous
 open BigTacToe.Components
+open System.Net.Http
 
 [<RequireQualifiedAccess>]
 module internal MainMenu =
-    let fontSize = FontSize.Size 18.0
+    let private httpClient = new HttpClient()
+    
+    let private fontSize = FontSize.Size 18.0
     
     let init () = MainMenuModel(), Cmd.none
 
     let update message model =
         match message with
+        | MainMenuMsg.CheckServer opponent ->
+            let serverCheck =
+                let url = BigTacToe.Resources.url + "/status"
+                let canReach =
+                    async {
+                        try
+                            httpClient.Timeout <- TimeSpan.FromSeconds(5.0)
+                            let! result = httpClient.GetAsync(url) |> Async.AwaitTask
+                            if result.IsSuccessStatusCode
+                            then
+                                let! content = result.Content.ReadAsStringAsync() |> Async.AwaitTask
+                                return CheckServerResponse (content, opponent)
+                            else return CheckServerFailed
+                        with _ -> return CheckServerFailed
+                    }
+                canReach
+                
+            model, Cmd.ofAsyncMsg serverCheck, MainMenuExternalMsg.NoOp
+        | MainMenuMsg.CheckServerResponse ("Ok", opponent) ->
+            model, Cmd.ofMsg (MainMenuMsg.NavigateToOnlineGame opponent), MainMenuExternalMsg.NoOp
+        | MainMenuMsg.CheckServerResponse _
+        | MainMenuMsg.CheckServerFailed ->
+            let display =
+                async {
+                    do! Application.Current.MainPage.DisplayAlert("Connection problem", "Couldn't connect to server. Please try again later", "Ok") |> Async.AwaitTask
+                    return None
+                }
+                
+            model, Cmd.ofAsyncMsgOption display, MainMenuExternalMsg.NoOp
         | MainMenuMsg.NavigateToAiGame -> model, Cmd.none, MainMenuExternalMsg.NavigateToGame Ai
         | MainMenuMsg.NavigateToHotSeatGame -> model, Cmd.none, MainMenuExternalMsg.NavigateToGame HotSeat
-        | MainMenuMsg.NavigateToMatchmakingGame -> model, Cmd.none, MainMenuExternalMsg.NavigateToGame Random
-        | MainMenuMsg.NavigateToPrivateGame -> model, Cmd.none, MainMenuExternalMsg.NavigateToGame Private
+        | MainMenuMsg.NavigateToOnlineGame Opponent.Random -> model, Cmd.none, MainMenuExternalMsg.NavigateToGame Random
+        | MainMenuMsg.NavigateToOnlineGame Opponent.Private -> model, Cmd.none, MainMenuExternalMsg.NavigateToGame Private
         | MainMenuMsg.NavigateToHelp -> model, Cmd.none, MainMenuExternalMsg.NavigateToHelp
-        
-    
 
     let view model dispatch =
         ContentPage.contentPage [
@@ -65,8 +97,8 @@ module internal MainMenu =
                             Grid.Children [
                                 IconButton.iconButton [Frame.Row 0; Frame.Column 0] "cpu" "Play vs. CPU" (fun () -> dispatch MainMenuMsg.NavigateToAiGame)
                                 IconButton.iconButton [Frame.Row 0; Frame.Column 1] "passPhone" "2P. offline" (fun () -> dispatch MainMenuMsg.NavigateToHotSeatGame)
-                                IconButton.iconButton [Frame.Row 1; Frame.Column 0] "matchmaking" "Find opponent" (fun () -> dispatch MainMenuMsg.NavigateToMatchmakingGame)
-                                IconButton.iconButton [Frame.Row 1; Frame.Column 1] "privateGame" "Private match" (fun () -> dispatch MainMenuMsg.NavigateToPrivateGame)
+                                IconButton.iconButton [Frame.Row 1; Frame.Column 0] "matchmaking" "Find opponent" (fun () -> dispatch (MainMenuMsg.CheckServer Random))
+                                IconButton.iconButton [Frame.Row 1; Frame.Column 1] "privateGame" "Private match" (fun () -> dispatch (MainMenuMsg.CheckServer Private))
                             ]
                         ]
                     ]

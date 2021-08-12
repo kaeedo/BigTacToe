@@ -99,7 +99,7 @@ module internal Messages =
             let cmd =
                 Cmd.SignalR.connect RegisterHub (fun hub ->
                     hub
-                        .WithUrl(sprintf "http://127.0.0.1:5000%s" Endpoints.Root)
+                        .WithUrl(BigTacToe.Resources.url + Endpoints.Root)
                         .WithAutomaticReconnect()
                         .UseMessagePack()
                         .OnMessage SignalRMessage)
